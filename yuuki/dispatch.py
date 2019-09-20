@@ -3,7 +3,7 @@ import warnings
 import imp
 
 
-class Dispatcher(object):
+class Dispatcher():
     """
     Construct a Dispatcher from profiles (paths to python modules)
     
@@ -69,7 +69,7 @@ class Dispatcher(object):
         return info
 
 
-class OpenC2Action(object):
+class OpenC2Action():
     """
     OpenC2Action is a custom multimethod implementation
     

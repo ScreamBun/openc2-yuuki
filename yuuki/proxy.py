@@ -1,11 +1,10 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 
 import argparse
 import os
-
 from flask import Flask, jsonify, request, abort
-from dispatch import Dispatcher
-from ConfigParser import SafeConfigParser
+from .dispatch import Dispatcher
+from configparser import SafeConfigParser
 
 app = Flask(__name__)
 
@@ -100,11 +99,11 @@ def main():
         # Run the app    
         if args.port:
 
-		app.run(port=int(args.port),host="127.0.0.1")
+            app.run(port=int(args.port),host="127.0.0.1")
 
-	else:
+        else:
 
-		app.run(port=9001,host="127.0.0.1")	
+            app.run(port=9001,host="127.0.0.1")
 
     else:
 
@@ -122,21 +121,21 @@ def main():
 
         for profile in app.config["yuuki"]["profiles"]:
            
-            print " * Loading profile %s" % profile
+            print(' * Loading profile {}'.format(profile))
 
             profile_list.append(app.config["yuuki"]["profiles"][profile])
         
         # Make dispatcher with loaded modules    
         PROFILE = Dispatcher(profile_list)
 
-	if args.port:
+        if args.port:
 
-        	# Run the app:   
-       		app.run(port=int(args.port),host=app.config["yuuki"]["server"]["host"])
-	else:
+            # Run the app:   
+            app.run(port=int(args.port),host=app.config["yuuki"]["server"]["host"])
+        else:
 
-		# Run the app:
-                app.run(port=int(app.config["yuuki"]["server"]["port"]),host=app.config["yuuki"]["server"]["host"])
+        # Run the app:
+            app.run(port=int(app.config["yuuki"]["server"]["port"]),host=app.config["yuuki"]["server"]["host"])
 
 if __name__ == "__main__":
 

@@ -1,11 +1,9 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 
 import requests
 import sys
 import json
 import yaml
-import readline
-import string
 import re
 
 HEADERS = {"Content-Type": "application/json"}
@@ -22,29 +20,29 @@ def main():
     endpoint = None
     if len(sys.argv) == 2:
         endpoint = sys.argv[1]
-        if string.find(endpoint, "://") == -1:
-            print "Warning: URI scheme not specified"
+        if endpoint.find("://") == -1:
+            print("Warning: URI scheme not specified")
 
-    print "OpenC2 debug shell (endpoint={})".format(endpoint)
+    print("OpenC2 debug shell (endpoint={})".format(endpoint))
 
     while True:
         try:
-            cmd = parse(raw_input("openc2> "))
-            print json.dumps(cmd, indent=4)
+            cmd = parse(input("openc2> "))
+            print(json.dumps(cmd, indent=4))
             
             if endpoint is not None:
-                print "-->"
-                print "<--"
+                print("-->")
+                print("<--")
                 r = requests.post(endpoint, json=cmd, headers=HEADERS)
-                print json.dumps(r.json(), indent=4)
+                print(json.dumps(r.json(), indent=4))
 
         except EOFError:
-            print
+            print()
             break
         except KeyboardInterrupt:
-            print "^C"
+            print("^C")
         except Exception as e:
-            print "{}: {}".format(e.__class__.__name__, str(e))
+            print("{}: {}".format(e.__class__.__name__, str(e)))
 
     return 0
 
@@ -67,26 +65,26 @@ def parse(cmd):
     if actuator_match:
         groups = actuator_match.groups("")
 
-        action = string.lower(groups[0])
+        action = groups[0].lower()
         target_type = groups[1]
-        target = yaml.load(groups[2])
+        target = yaml.safe_load(groups[2])
 
         actuator_type = groups[3]
-        actuator = yaml.load(groups[4])
+        actuator = yaml.safe_load(groups[4])
         
-        modifier = yaml.load("{{{}}}".format(groups[5]))
+        modifier = yaml.safe_load("{{{}}}".format(groups[5]))
     elif non_actuator_match:
         groups = non_actuator_match.groups("")
 
-        action = string.lower(groups[0])
+        action = groups[0].lower()
         target_type = groups[1]
-        target = yaml.load(groups[2])
+        target = yaml.safe_load(groups[2])
 
-        modifier = yaml.load("{{{}}}".format(groups[3]))
+        modifier = yaml.safe_load("{{{}}}".format(groups[3]))
     elif target_only_match:
         groups = target_only_match.groups("")
 
-        action = string.lower(groups[0])
+        action = groups[0].lower()
         target_type = groups[1]
     else:
         raise SyntaxError("Invalid OpenC2 command")
