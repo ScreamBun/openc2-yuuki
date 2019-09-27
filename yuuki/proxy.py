@@ -29,7 +29,7 @@ def bad_request(e):
 @app.errorhandler(500)
 def internal_server_error(e):
     """
-    Uncaught proxy error
+    Uncaught proxy error.
     """
     return jsonify({"response": "500 Internal Server Error"}), 500
 
@@ -39,7 +39,7 @@ def recieve():
     """
     Recieve an OpenC2 command, process and return response.
 
-    All OpenC2 commands should be application/json over HTTP POST
+    All OpenC2 commands should be application/json over HTTP POST.
     """
     if not request.json:
         abort(400)
@@ -48,34 +48,28 @@ def recieve():
     return jsonify(response), 200
 
 def parse_config(config_file):
-
     """
-    Receive a file path and parse it to a dict
+    Receive a file path and parse it to a dict.
     """
-
     config_reader = SafeConfigParser()
     config_reader.read(config_file)
     config_dict = {}
 
     for section_name in config_reader.sections():
-
         config_dict[section_name] = {}
-
         for name, value in config_reader.items(section_name):
-
             config_dict[section_name][name] = value
-    
+
     return config_dict
 
 def main():
-
     """
     Parse configuration and start flask app.
-    -
-    -    WARNING: Multiple profiles are currently subtly broken in dispatch.py; 
-         spreading the logic for different actions across multiple .py files should work correctly,
-         but spreading the logic for the same action across multiple files will not; 
-         only the target/actuator types from the last profile will be run.
+
+    WARNING: Multiple profiles are currently subtly broken in dispatch.py;
+    spreading the logic for different actions across multiple .py files should work correctly,
+    but spreading the logic for the same action across multiple files will not;
+    only the target/actuator types from the last profile will be run.
     """
     global PROFILE
 
@@ -86,56 +80,35 @@ def main():
     group.add_argument('--conf', default=None)
     group.add_argument('--profiles', nargs='+', default=None)
 
-
     args = parser.parse_args()
 
+    # Use the command-line.
     if args.profiles:
-
-        # If a profile is specified by switches
-
-        # Make dispatcher with loaded modules     
         PROFILE = Dispatcher(args.profiles)
+        port = 9001
+        host = '127.0.0.1'
 
-        # Run the app    
-        if args.port:
+    # Use the config-file.
+    elif os.path.isfile(args.conf):
+        app.config["yuuki"] = parse_config(args.conf)
 
-            app.run(port=int(args.port),host="127.0.0.1")
-
-        else:
-
-            app.run(port=9001,host="127.0.0.1")
-
-    else:
-
-        # If a config file is specified
-        if os.path.isfile(args.conf):
-
-            app.config["yuuki"] = parse_config(args.conf)
-
-        else:
-
-            raise(Exception("Config file not found")) 
-
-        # Load profiles
         profile_list = []
-
         for profile in app.config["yuuki"]["profiles"]:
-           
             print(' * Loading profile {}'.format(profile))
-
             profile_list.append(app.config["yuuki"]["profiles"][profile])
-        
-        # Make dispatcher with loaded modules    
+
         PROFILE = Dispatcher(profile_list)
 
-        if args.port:
+        port = int(app.config["yuuki"]["server"]["port"])
+        host =     app.config["yuuki"]["server"]["host"]
 
-            # Run the app:   
-            app.run(port=int(args.port),host=app.config["yuuki"]["server"]["host"])
-        else:
+    else:
+        raise Exception("Profile(s) not specified. Use --conf or --profiles")
 
-        # Run the app:
-            app.run(port=int(app.config["yuuki"]["server"]["port"]),host=app.config["yuuki"]["server"]["host"])
+    # Let command-line port win.
+    port = int(args.port) if args.port else port
+
+    app.run(port=port, host=host)
 
 if __name__ == "__main__":
 

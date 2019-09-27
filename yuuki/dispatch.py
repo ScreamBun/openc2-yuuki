@@ -49,9 +49,7 @@ class Dispatcher():
     
     def capabilities(self):
         """
-        Return supported OpenC2 capabilities;
-
-        For demo purposes; untested
+        Untested Demo! Return supported OpenC2 capabilities.
         """
         info = {}
         for module in self.modules:
@@ -71,34 +69,32 @@ class Dispatcher():
 
 class OpenC2Action():
     """
+    Stores profile methods with same signature in a lookup table.
+
     OpenC2Action is a custom multimethod implementation
     
-    An OpenC2Action dispatches on args[0]['type'] and, optionally,
-    args[1]['type']. In OpenC2 semantics, this corresponds to the type
+    An OpenC2Action dispatches on target['type'] and, optionally,
+    actuator['type']. In OpenC2 semantics, this corresponds to the type
     of the target (required) and the type of the actuator. The default
-    actuator is None
+    actuator is None.
     
     TODO: better warning/error messages; docstring handling
     """
     def __init__(self, name):
-        self.name = name
+        self.name  = name
         self.table = {}
         self._last_register = None
 
-
-    def __call__(self, *args):
-        target_type = args[0].get('type')
-        
-        actuator_type = None
-        if args[1] is not None:
-            actuator_type = args[1].get('type')
+    def __call__(self, target: dict, actuator: dict = None, modifier: dict = None):
+        target_type   = target.get('type')
+        actuator_type = actuator.get('type')
 
         function = self.table.get((target_type, actuator_type))
         
         if function is None:
             raise TypeError("No definition for signature")
 
-        return function(*args)
+        return function(target, actuator, modifier)
 
 
     def register(self, target_types, actuator_types, function):

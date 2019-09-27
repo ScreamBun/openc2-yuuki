@@ -8,14 +8,14 @@ import re
 
 HEADERS = {"Content-Type": "application/json"}
 
-ACTUATOR = r"\A(\S+)\s+(\S+)\s+(\{.*\})\s+(\S+)\s+(\{.*\})(\s+.*)?\Z"
-NO_ACTUATOR = r"\A(\S+)\s+(\S+)\s+(\{.*\})(\s+.*)?\Z"
-TARGET_ONLY = r"\A(\S+)\s+(\S+)\Z"
-
+_BASE_REGEX = r"\A(?P<action>\S+)\s+(?P<target_type>\S+)"
+ACTUATOR    = _BASE_REGEX + r"\s+(?P<target>\{.*\})\s+(?P<actuator_type>\S+)\s+(?P<actuator>\{.*\})(?P<modifier>\s+.*)?\Z"
+NO_ACTUATOR = _BASE_REGEX + r"\s+(?P<target>\{.*\})(?P<modifier>\s+.*)?\Z"
+TARGET_ONLY = _BASE_REGEX + r"\Z"
 
 def main():
     """
-    OpenC2 debug shell
+    Run the OpenC2 debug shell.
     """
     endpoint = None
     if len(sys.argv) == 2:
@@ -46,14 +46,13 @@ def main():
 
     return 0
 
-
 def parse(cmd):
     """
-    Debug OpenC2 CLI parser
+    Format the user's input into a nested dictionary.
     """
-    actuator_match = re.match(ACTUATOR, cmd)
+    actuator_match     = re.match(ACTUATOR,    cmd)
     non_actuator_match = re.match(NO_ACTUATOR, cmd)
-    target_only_match = re.match(TARGET_ONLY, cmd)
+    target_only_match  = re.match(TARGET_ONLY, cmd)
 
     action = None
     target_type = None
@@ -63,40 +62,40 @@ def parse(cmd):
     modifier = {}
 
     if actuator_match:
-        groups = actuator_match.groups("")
+        groups = actuator_match.groupdict()
 
-        action = groups[0].lower()
-        target_type = groups[1]
-        target = yaml.safe_load(groups[2])
+        action      = groups['action'].lower()
+        target_type = groups['target_type']
+        target      = yaml.safe_load(groups['target'])
 
-        actuator_type = groups[3]
-        actuator = yaml.safe_load(groups[4])
+        actuator_type = groups['actuator_type']
+        actuator      = yaml.safe_load(groups['actuator'])
         
-        modifier = yaml.safe_load("{{{}}}".format(groups[5]))
+        modifier = yaml.safe_load("{{{}}}".format(groups['modifier']))
     elif non_actuator_match:
-        groups = non_actuator_match.groups("")
+        groups = non_actuator_match.groupdict()
 
-        action = groups[0].lower()
-        target_type = groups[1]
-        target = yaml.safe_load(groups[2])
+        action      = groups['action'].lower()
+        target_type = groups['target_type']
+        target      = yaml.safe_load(groups['target'])
 
-        modifier = yaml.safe_load("{{{}}}".format(groups[3]))
+        modifier = yaml.safe_load("{{{}}}".format(groups['modifier']))
     elif target_only_match:
-        groups = target_only_match.groups("")
+        groups = target_only_match.groupdict()
 
-        action = groups[0].lower()
-        target_type = groups[1]
+        action      = groups['action'].lower()
+        target_type = groups['target_type']
     else:
         raise SyntaxError("Invalid OpenC2 command")
-
 
     target['type'] = target_type
 
     if actuator_match:
         actuator['type'] = actuator_type
 
-    return {'action': action, 'target': target, 'actuator': actuator,
+    retval = {'action': action, 'target': target, 'actuator': actuator,
             'modifier': modifier}
+    return retval
 
 
 if __name__ == "__main__":
