@@ -1,19 +1,13 @@
 # openc2-yuuki
 
-> "My family name is Yugano. My given name is Yuuki. I have no redeeming qualities.
-> ...
-> This is because the Internet has ruined my way of looking at the world."
-> - from A Girl Corrupted by the Internet is the Summoned Hero?! by Eliezer Yudkowsky
+Yuuki is compatible with Python 3. It is a reference implementation of an OpenC2 actuator, and comes with a simple client that will send commands to the actuator.
+As a demonstration, this actuator implements an imaginary OpenC2 Profile called "ACME Anti-RoadRunner", which might be sold to a famous Coyote.
 
-Yuuki is a Python package for building an OpenC2 proxy. Yuuki is currently compatible with Python 2.7 only.
-
-## Getting Started
-
-Create a python virtual environment and pip install yuuki. (Yuuki is alpha software; installing globally is not recommended.)
+## Installation
 
 Install virtualenv via pip:
 
-    $ pip install virtualenv
+    $ pip3 install virtualenv
 
 Create and activate a python virtual environment:
     
@@ -25,27 +19,114 @@ Create and activate a python virtual environment:
 Download and install yuuki
     
     $ git clone https://github.com/oasis-open/openc2-yuuki.git
-    $ pip install ./openc2-yuuki
+    $ pip3 install ./openc2-yuuki
 
-## Usage
 
-Start a proxy:
 
-    python -m yuuki.proxy --profiles openc2-yuuki/examples/simple_profile.py
+## Start Actuator
 
-Start a debug shell:
+Start the actuator in the background with default settings, and silence its stdout, etc:
 
-    python -m yuuki.shell http://localhost:9001
+    $ python3 -m yuuki.actuator > /dev/null 2>&1 &
 
-The general form of a command issued from the debug shell:
+## Query the Actuator's Features
 
-    openc2> ACTION target:type {some: specifier, another: specifier} actuator:type {some: specifier} some: modifier, another: modifier
+Now that we have the actuator running, let's see what it can do. To start, let's query its features. We can type this command out manually, but for now, let's just send a prewritten command that our client program comes with.
 
-Actuators and modifiers are optional.
+    $ python3 -m yuuki.client send 0
 
-Examples supported by simple_profile.py
+OUTPUT:
 
-    openc2> DENY openc2:domain {URI: evil.com}
-    openc2> DENY openc2:user {name: John}
-    openc2> MITIGATE openc2:file {} openc2:rm {}
+    >>> COMMAND
+            {'action': 'query',
+             'target': {'features': []}}
 
+    <<< RESPONSE
+            {'results': {'pairs': [['detonate', 'x-acme:road_runner'],
+                                   ['locate',   'x-acme:road_runner'],
+                                   ['restart',  'device'],
+                                   ['set',      'properties'],
+                                   ['start',    'device'],
+                                   ['stop',     'device']],
+                         'profiles': ['x-acme'],
+                         'rate_limit': 30,
+                         'versions': ['1.0']},
+             'status': 200,
+             'status_text': 'OK - the Command has succeeded.'}
+
+OK, we can see we sent an action-target pair of 'query features'. The response shows us everything we need to know about this actuator, and perhaps most importantly, which OpenC2 profile(s) it implements. Looks like it implements one profile with a NameSpace Identifer (NSID) of 'x-acme', and has six action-target 'pairs'. This means the actuator supports six specific commands; one for each pair.
+
+## Send a Command: Locate RoadRunner!
+
+From the list of action-target pairs above, we can see the actuator supports a command for locating the road runner. Let's do it. Again, we'll use a pre-written command from our client. To see what pre-written commands the client came with, just type
+
+    $ python3 -m yuuki.client show
+
+Now let's actually locate the bird!
+
+    $ python3 -m yuuki.client send 5
+
+OUTPUT:
+
+    >>> COMMAND
+            {'action': 'locate',
+            'target': {'x-acme:road_runner': ''}
+            'args': {'response_requested': 'complete'},}
+
+    <<< RESPONSE
+            {'status': 200,
+            'status_text': "Road Runner has been located!"}
+
+## Send a Command: Destroy RoadRunner!
+
+Ok, we've found our target; let's act!
+
+    $ python3 -m yuuki.client send 6
+
+    >>> COMMAND
+            {'action': 'destroy',
+            'target': {'x-acme:road_runner': ''}
+            'args': {'response_requested': 'complete'},}
+
+    <<< RESPONSE
+            {'status': 500,
+            'status_text': "INTERNAL ERROR! Now targetting Coyote!!"}
+
+## Try Again
+
+Our previous command failed! Maybe we should hit the reset button on the actuator. We know that command exists becuase we saw it in the 'query features' response. This time we'll type in the command.
+    
+    $ python3 -m yuuki.client type-it
+    $ {
+    $ "action" : "reset",
+    $ "target" : { "device" : ""}
+    $ }
+    $ <enter>
+
+    >>> COMMAND
+            {'action': 'restart',
+             'target': {'device': []}}
+
+    <<< RESPONSE
+            {'status': 200,
+             'status_text': 'OK - the Command has succeeded.'}
+
+
+## That's all, folks!
+
+Stop the actuator:
+
+    $ fg
+    $ CTRL-C
+
+
+## What just happened?
+
+The actuator started a server that waits for messages on 127.0.0.0:9001.
+The client sent a pre-written OpenC2 command from command_examples.json to the server.
+The server dispatched to any profile implementations it had loaded, if appropriate, then returned the response.
+
+
+
+## Next Steps
+Look at 'profile_acme_anti_roadrunnery.py' in yuuki/actuator_src/profiles as a starting point to see what's happening.
