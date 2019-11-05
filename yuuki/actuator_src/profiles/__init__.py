@@ -5,6 +5,13 @@ from ..common.response import Response, ResponseCode
 # Set which profile(s) are in use.
 ACTIVE_PROFILES = ['profile_acme_anti_roadrunner']
 
+
+NSIDS      = []
+PAIRS      = {}
+VERSIONS   = []
+RATE_LIMIT = 30 # Magic!
+
+
 class _ProfileModule():
     def __init__(self, file_name):
         self.NSID = None
@@ -13,10 +20,6 @@ class _ProfileModule():
         self.PAIRS = []
         self.VERSIONS = None
 
-NSIDS      = []
-PAIRS      = {}
-VERSIONS   = []
-RATE_LIMIT = 30 # Magic!
 
 for profile_name in ACTIVE_PROFILES:
     profile_module = _ProfileModule(profile_name)
@@ -46,6 +49,18 @@ for profile_name in ACTIVE_PROFILES:
                              f'must all support the same version(s).')
 
 
+def _handle_query_features(cmd : OC2Cmd):
+    results = {'versions'   : VERSIONS,
+               'profiles'   : NSIDS,
+               'rate_limit' : RATE_LIMIT,
+               'pairs'      : sorted(
+                                 sorted(list(PAIRS.keys()),
+                                        key=lambda x: x[1]),
+                                 key=lambda x: x[0])}
+    
+    return Response(status=ResponseCode.OK, results=results)
+
+
 def do_it(pair, cmd):
     """Interface to use by external calls.
     """
@@ -60,16 +75,3 @@ def do_it(pair, cmd):
 
     func = getattr(PAIRS[pair].module, pair.action)
     return func(cmd)
-
-def _handle_query_features(cmd : OC2Cmd):
-    """
-    """
-    results = {'versions'   : VERSIONS,
-               'profiles'   : NSIDS,
-               'rate_limit' : RATE_LIMIT,
-               'pairs'      : sorted(
-                                 sorted(list(PAIRS.keys()),
-                                        key=lambda x: x[1]),
-                                 key=lambda x: x[0])}
-    
-    return Response(response_code=ResponseCode.OK, results=results)

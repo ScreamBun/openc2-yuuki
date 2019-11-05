@@ -1,7 +1,6 @@
 #!/usr/bin/env python3
 
-from .actuator_src.consumer import proxy
+from .actuator_src.consumer import ui
 
 if __name__ == '__main__':
-    ui = proxy.Proxy()
     ui.run()

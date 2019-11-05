@@ -1,0 +1,89 @@
+[
+    {
+        "action": "query",
+        "target": {
+            "features": []
+        },
+        "args": {
+            "response_requested": "complete"
+        }
+    },{
+        "action": "start",
+        "target": {
+            "device": ""
+        },
+        "args": {
+            "response_requested": "complete"
+        }
+    },{
+        "action": "stop",
+        "target": {
+            "device": ""
+        },
+        "args": {
+            "response_requested": "complete"
+        }
+    },{
+        "action": "restart",
+        "target": {
+            "device": ""
+        },
+        "args": {
+            "response_requested": "complete"
+        }
+    },{
+        "action": "set",
+        "target": {
+            "properties": ""
+        },
+        "args": {
+            "response_requested": "complete"
+        }
+    },{
+        "action": "locate",
+        "target": {
+            "x-acme:road_runner": ""
+        },
+        "args": {
+            "response_requested": "complete"
+        }
+    },{
+        "action": "detonate",
+        "target": {
+            "x-acme:road_runner": ""
+        },
+        "args": {
+            "response_requested": "complete"
+        }
+    },{
+        "action": "detonate",
+        "target": {
+            "x-acme:coyote": ""
+        },
+        "args": {
+            "response_requested": "complete"
+        },
+        "actuator": {
+            "profile_simple" : {
+                "acutator_specifier_1" : "some_value1",
+                "actuator_specifier_2" : "some_value2"
+            }
+        }
+    },{
+        "action": "detonate",
+        "target": {
+            "x-acme:road_runner": ""
+        },
+        "args": {
+            "response_requested": "ack"
+        }
+    },{
+        "action": "detonate",
+        "target": {
+            "x-acme:road_runner": ""
+        },
+        "args": {
+            "start_time": 50000
+        }
+    }
+]

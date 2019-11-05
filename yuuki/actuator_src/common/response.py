@@ -28,17 +28,27 @@ class ResponseCode(Enum):
 
 
 class Response():
-    def __init__(self, response_code = ResponseCode.NOT_IMPLEMENTED,
-                       status_text   = None,
-                       results       = None):
-        self.response_code = response_code
-        self.status_text   = status_text
-        self._results      = results
+    def __init__(self, status = ResponseCode.NOT_IMPLEMENTED,
+                       status_text = None,
+                       results     = None,
+                       ack = False):
+        
+        self.status      = status
+        self.status_text = status_text
+        self.results     = results
+        self.ack         = ack
+
     def __repr__(self):
         return self.as_dict().__repr__()
+
     def as_dict(self):
-        retval = {'status'      : self.response_code.value,
-                  'status_text' : self.status_text if self.status_text else self.response_code.text()}
-        if self._results is not None:
-            retval['results'] = self._results
+        retval = {'status' : self.status.value}
+        
+        if self.ack:
+            return retval
+
+        retval['status_text'] = self.status_text if self.status_text else self.status.text()
+        
+        if self.results is not None:
+            retval['results'] = self.results
         return retval

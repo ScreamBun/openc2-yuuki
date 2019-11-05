@@ -2,7 +2,7 @@ from ..common.util import Pair
 
 
 class _Target():
-    """Store a function to be called later.
+    """Store a real function to be called later, with its target name.
     """
     def __init__(self, name, function):
         self.name = name
@@ -14,7 +14,7 @@ class _Action():
     For example, could contain the two functions for 'deny mac_addr' and 
     'deny domain_name'. When an instance of this class is called, it will
     look up which function to call based on the target (mac_addr, etc)
-    given in the call args.
+    given in the call args. 
     """
     def __init__(self, name):
         self.name = name
@@ -36,14 +36,17 @@ class _Action():
 
 
 def target(target_name):
-    """Very similiar to functools.singledispatch.
+    """ Decorator - Very similiar to functools.singledispatch.
 
-    But instead of dispatching on a type of argument, we dispatch
-    on the value of cmd.target, e.g. 'domain_name'.
+    But instead of dispatching on a TYPE of argument, we dispatch
+    on the VALUE of an argument attribute (cmd.target, e.g. 'domain_name').
     """
 
     def _register(action_function):
-        """Stores a function in a lookup table and updates profile_registry.
+        """Instantiates a wrapper object (_Action) to store the 
+        action_function in a lookup table, and adds any subsequent functions
+        of the same name to the same wrapper object. Also updates the
+        profile_registry with the action-target pairs encountered.
         """
         action_name = action_function.__name__
         
@@ -52,6 +55,8 @@ def target(target_name):
         if action_obj is None:
             action_obj = _Action(action_name)
         
+        # This function is the easiest place to gather info for
+        # the profile_registry
         profile_registry = action_function.__globals__.get('profile_registry')
         registered_pairs = profile_registry['PAIRS']
 
@@ -60,6 +65,7 @@ def target(target_name):
             raise ValueError(f'How did this happen...')
         registered_pairs.append(pair)
 
+        # Now actually store the action function with its target name, etc...
         target_obj = _Target(target_name, action_function)
         action_obj.pair(target_obj)
 
