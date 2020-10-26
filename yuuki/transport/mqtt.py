@@ -66,6 +66,10 @@ class Publish():
     qos : int = 1
 
 @dataclass
+class OpenC2Options():
+    use_oc2_mqtt_header : bool = True
+
+@dataclass
 class MqttConfig():
     '''Configuration object to be passed to Mqtt Transport init.
 
@@ -78,6 +82,7 @@ class MqttConfig():
     broker : BrokerConfig = field(default_factory=BrokerConfig)
     subscriptions : List[Subscription] = field(default_factory=lambda : [Subscription()])
     publishes : List[Publish] = field(default_factory=lambda : [Publish()])
+    oc2_options : OpenC2Options = field(default_factory=OpenC2Options)
     
 
 
@@ -109,15 +114,45 @@ class Mqtt(Transport):
                                   certfile  = self.config.broker.authentication.certfile,
                                   keyfile   = self.config.broker.authentication.keyfile)
         
+
+
         mqtt_client.msg_handler = self.on_oc2_msg
         mqtt_client.connect()
         loop = asyncio.get_event_loop()
         loop.run_until_complete(mqtt_client.main())
 
+    def handle_byte_header_in(self, raw_data: bytes):
+        header_bytes = raw_data[0:2]
+        raw_data = raw_data[2:]
+        if header_bytes[0] != 144:
+            message = 'First four bits of Message header should be fixed 9, but is {}'.format(header_bytes[0])
+            logging.error(message)
+            raise ValueError(message)
+        if header_bytes[1] != 0:
+            message = 'Message type should be 0, but is {}'.format(header_bytes[1])
+            logging.error(message)
+            raise ValueError(message)
+        if int(header_bytes[1:].hex(), base=16) != 0:
+            message = 'Serialization header we got is {}'.format(int(header_bytes[2:].hex(), base=16))
+            logging.error(message)
+            raise ValueError(message)
+        return raw_data
+    
+    def handle_byte_header_out(self, serialized_msg):
+        header_bytes = bytes.fromhex('9001')
+        serialized_msg = header_bytes + bytes(serialized_msg, 'utf-8')
+        return serialized_msg
+
+    
     async def on_oc2_msg(self, raw_data, response_queue):
         '''Called whenever our real mqtt client gets a message'''
+        if self.config.oc2_options.use_oc2_mqtt_header:
+            raw_data = self.handle_byte_header_in(raw_data)
         try:
             result = await self.get_response(raw_data)
+            if self.config.oc2_options.use_oc2_mqtt_header:
+                result = self.handle_byte_header_out(result)
+
             response_queue.put_nowait(result)
         except Exception as e:
             logging.error('Message Handling Failed {}'.format(e))
@@ -203,7 +238,7 @@ class _MqttClient():
         self.in_msg_queue.put_nowait(msg.payload)
         
     def _on_disconnect(self, client, userdata, rc):
-        loggin.info('OnDisconnect')
+        logging.info('OnDisconnect')
         self.disconnected.set_result('disconnected')
     
     def on_socket_open(self, client, userdata, sock):
@@ -238,7 +273,11 @@ class _MqttClient():
             if self.in_msg_queue.qsize() > 0:
                 msg = self.in_msg_queue.get_nowait()
                 self.in_msg_queue.task_done()
-                await self.msg_handler(msg, self.out_msg_queue)
+                try:
+                    await self.msg_handler(msg, self.out_msg_queue)
+                except Exception as e:
+                    logging.error(e)
+                    raise
             
             try:
                 await asyncio.sleep(1)

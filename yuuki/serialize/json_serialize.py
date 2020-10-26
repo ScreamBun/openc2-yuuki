@@ -1,14 +1,15 @@
 import json
 import logging
 from .base import _Serializer
-from ..openc2.oc2_types import OC2Response, StatusCode
+from ..openc2.oc2_types import OC2Rsp, StatusCode
 
 
 
 class Json(_Serializer):
     @staticmethod
-    def serialize(obj : OC2Response):
-        logging.debug('Json Serialize')
+    def serialize(obj : OC2Rsp):
+        logging.debug('Json Serialize {} {}'.format( type(obj), obj))
+        #return json.dumps(obj)
         return _JsonEncoder().encode(obj)
 
     @staticmethod
@@ -26,13 +27,8 @@ class Json(_Serializer):
 class _JsonEncoder(json.JSONEncoder):
     def __init__(self):
         super().__init__()
-    def default(self, o : OC2Response):
-        if isinstance(o, OC2Response):
-            retval = {}
-            for key in o.keys_for_serializing:
-                retval[key] = getattr(o,key)
-            return retval
+    def default(self, o : OC2Rsp):
         if isinstance(o, StatusCode):
-            return o.text()
-        return json.JSONEncoder.default(self, retval)
+            return o.value
+        return json.JSONEncoder.default(self, o)
         

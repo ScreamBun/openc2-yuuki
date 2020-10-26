@@ -10,6 +10,8 @@ from .oc2_types import (
     OC2Cmd,
     Pair,
     StatusCode,
-    OC2Response
+    OC2Rsp,
+    OC2Msg,
+    make_response_msg
 )
 

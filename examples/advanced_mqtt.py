@@ -17,7 +17,7 @@ from yuuki.openc2.message_dispatch import (
 )
 
 from yuuki.openc2.oc2_types import (
-    OC2Response,
+    OC2Rsp,
     OC2Cmd,
     StatusCode
 )
@@ -51,7 +51,7 @@ class CmdHandler(OpenC2CmdDispatchBase):
 
     @oc2_pair(ACTUATOR_NSID, ACTION, TARGET)
     def some_method(self, OC2Command):
-        return OC2Response
+        return OC2Rsp
     '''
     def __init__(self, validator=None):
         super().__init__(validator)
@@ -81,7 +81,7 @@ class CmdHandler(OpenC2CmdDispatchBase):
         return 60
 
     @oc2_query_features
-    def func1(self, oc2_cmd : OC2Cmd) -> OC2Response:
+    def func1(self, oc2_cmd : OC2Cmd) -> OC2Rsp:
         '''
         Handle all calls to the OpenC2 command 'query features'.
         The parent class comes with a built-in method for this.
@@ -91,7 +91,7 @@ class CmdHandler(OpenC2CmdDispatchBase):
         return oc2_rsp
 
     @oc2_pair('slpf', 'deny', 'ipv4_connection')
-    def func2(self, oc2_cmd : OC2Cmd) -> OC2Response:
+    def func2(self, oc2_cmd : OC2Cmd) -> OC2Rsp:
         '''
         Stub for the SLPF OpenC2 Command 'deny ipv4_connection'.
         '''
@@ -106,7 +106,7 @@ class CmdHandler(OpenC2CmdDispatchBase):
                     found_other.append(key)
 
         if len(found_keys) < 1 or len(found_other) > 0:
-            oc2_rsp = OC2Response(
+            oc2_rsp = OC2Rsp(
                 status=StatusCode.BAD_REQUEST,
                 status_text='Any of {} required for ipv4_connection'.format(str(allowed_keys)))
             return oc2_rsp
@@ -116,14 +116,14 @@ class CmdHandler(OpenC2CmdDispatchBase):
         # For now, return what we would do.
         status_text = 'Denied ipv4_connection: {}'.format(oc2_cmd.target['ipv4_connection'])
 
-        oc2_rsp = OC2Response(
+        oc2_rsp = OC2Rsp(
             status=StatusCode.OK,
             status_text=status_text)
 
         return oc2_rsp
     
     @oc2_pair('x-acme', 'detonate', 'x-acme:roadrunner' )
-    def func3(self, oc2_cmd : OC2Cmd) -> OC2Response:
+    def func3(self, oc2_cmd : OC2Cmd) -> OC2Rsp:
         '''
         Custom actuator profile implementation for Road Runner hunting.
         '''
@@ -133,30 +133,30 @@ class CmdHandler(OpenC2CmdDispatchBase):
         if coyote_success:
             raise SystemError('Example of how exceptions here are caught')
         else:
-            return OC2Response(
+            return OC2Rsp(
                 status=StatusCode.INTERNAL_ERROR,
                 status_text='Coyote can never win')
 
     @oc2_no_matching_pair
-    def func4(self, oc2_cmd : OC2Cmd) -> OC2Response:
+    def func4(self, oc2_cmd : OC2Cmd) -> OC2Rsp:
         '''
         We've searched all our action-target pairs from all our
         actuators, and that pair doesn't exist.
         '''
-        oc2_rsp = OC2Response(
+        oc2_rsp = OC2Rsp(
             status=StatusCode.NOT_FOUND,
             status_text='No action-target pair for {} {}'.format(oc2_cmd.action, oc2_cmd.target_name))
 
         return oc2_rsp
 
     @oc2_no_matching_actuator
-    def func5(self, oc2_cmd : OC2Cmd) -> OC2Response:
+    def func5(self, oc2_cmd : OC2Cmd) -> OC2Rsp:
         '''
         We have a matching action-target pair in our actuator(s),
         but we don't have the requested actuator (nsid).
         '''
         actuator_name, = oc2_cmd.actuator.keys()
-        oc2_rsp = OC2Response(
+        oc2_rsp = OC2Rsp(
             status=StatusCode.NOT_FOUND,
             status_text='No actuator {}'.format(actuator_name))
 
@@ -170,13 +170,13 @@ if __name__ == '__main__':
     
     mqtt_config = MqttConfig(
                     broker=BrokerConfig(
-                        socket='127.0.0.1:1883',
+                        socket='34.86.117.113:1883',
                         client_id='',
                         keep_alive=60,
                         authorization=Authorization(
-                            enable=False,
-                            user_name=None,
-                            pw=None),
+                            enable=True,
+                            user_name='plug',
+                            pw='fest'),
                         authentication=Authentication(
                             enable=False,
                             certfile=None,
@@ -184,11 +184,11 @@ if __name__ == '__main__':
                             ca_certs=None)),
                     subscriptions=[
                         Subscription(
-                            topic_filter='yuuki_user/oc2/cmd',
+                            topic_filter='patrickc/oc2/cmd',
                             qos=1)],
                     publishes=[
                         Publish(
-                            topic_name='yuuki_user/oc2/rsp',
+                            topic_name='patrickc/oc2/rsp',
                             qos=1
                         )]
                     )

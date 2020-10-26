@@ -56,6 +56,8 @@ class Http(Transport):
         @app.route('/', methods=['POST'])
         async def receive():
             raw_data = await request.get_data()
+            print("raw_data type:", type(raw_data))
+            print(raw_data)
             oc2_rsp = await self.get_response(raw_data)
             http_response = await make_response(oc2_rsp)
             http_response.content_type = 'application/openc2-rsp+json;version=1.0'

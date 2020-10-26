@@ -1,0 +1,16 @@
+{
+    "headers": {
+      "request_id": "95ad511c-3339-4111-9c47-9156c47d37d3",
+      "created": 1595268027000,
+      "from": "Producer1@example.com",
+      "to": ["consumer1@example.com", "consumer2@example.com", "consumer3@example.com"]
+    },
+    "body": {
+      "openc2": {
+        "request": {
+          "action": "deny",
+          "target": {
+            "ipv4_connection": {"src_port":"http://www.example.com"} }}}}}
+
+
+
