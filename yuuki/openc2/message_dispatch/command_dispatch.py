@@ -35,7 +35,7 @@ class OpenC2CmdDispatchBase(metaclass=_OC2PairMeta):
     target: {'my_target' : ...}
     actuator: {my_actautor_nsid : {...}}
 
-    See the implementation of get_actuator_func for details.
+    See the implementation of get_actuator_callable for details.
 
     """
     def __init__(self,validator):
@@ -69,7 +69,7 @@ class OpenC2CmdDispatchBase(metaclass=_OC2PairMeta):
                 pairs[action] = [target]
         return pairs
 
-    def get_actuator_func(self,oc2_msg: OC2Msg):
+    def get_actuator_callable(self,oc2_msg: OC2Msg):
         func_name = None
         func = None
         logging.debug('Validating...')
@@ -116,7 +116,7 @@ class OpenC2CmdDispatchBase(metaclass=_OC2PairMeta):
         else:
             raise NotImplementedError('No function defined for: ',oc2_cmd)
 
-        logging.debug('Will call {}'.format(func_name))
+        logging.debug('Will call a method named: {}'.format(func_name))
         my_callable = partial(func, oc2_cmd)
         return my_callable
 

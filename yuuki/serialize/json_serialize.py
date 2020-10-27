@@ -20,7 +20,7 @@ class Json(_Serializer):
             if isinstance(retval, str):
                 retval = json.loads(retval)
         except Exception as e:
-            print('BAD',e)
+            logging.error('Json deserialize problem:',e)
             raise
         return retval
 
