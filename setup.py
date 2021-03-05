@@ -1,4 +1,4 @@
 import setuptools
 
-setuptools.setup(version='1.0.0')
+setuptools.setup()
 
