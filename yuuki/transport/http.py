@@ -49,7 +49,7 @@ class Http(Transport):
         self.port = int(port)
 
         if self.config.use_tls:
-            if self.config.certfile is None and self.config.keyfile is None:
+            if self.config.certfile is None or self.config.keyfile is None:
                 raise ValueError('TLS requires a keyfile and certfile.')
     
     def setup(self, app):
