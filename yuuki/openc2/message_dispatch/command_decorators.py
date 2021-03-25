@@ -8,7 +8,7 @@ def oc2_pair(actuator_nsid, action_name, target_name):
 
     Example:
 
-    class MyDispatch(OOpenC2CmdDispatchBase):
+    class MyDispatch(OpenC2CmdDispatchBase):
         ...
         @oc2_pair('slpf', 'deny', 'ipv4_connection')
         def some_function(oc2_cmd):
@@ -34,7 +34,7 @@ def oc2_no_matching_pair(method):
 
     Example:
 
-    class MyDispatch(OOpenC2CmdDispatchBase):
+    class MyDispatch(OpenC2CmdDispatchBase):
         ...
         @oc2_no_matching_pair
         def some_function(oc2_cmd):
@@ -55,7 +55,7 @@ def oc2_no_matching_actuator(method):
 
     Example:
 
-    class MyDispatch(OOpenC2CmdDispatchBase):
+    class MyDispatch(OpenC2CmdDispatchBase):
         ...
         @oc2_no_matching_actuator
         def some_function(oc2_cmd):
@@ -74,7 +74,7 @@ def oc2_query_features(method):
 
     Example:
 
-    class MyDispatch(OOpenC2CmdDispatchBase):
+    class MyDispatch(OpenC2CmdDispatchBase):
         ...
         @oc2_query_features
         def some_function(oc2_cmd):
