@@ -202,17 +202,6 @@ class OC2Msg():
                 retval['headers']['from'] = retval['headers'].pop('from_')
 
         return retval
-    
-
-
-def make_response_msg():
-    retval = OC2Msg()
-    retval.body.openc2 = OC2RspParent()
-    retval.headers.created = int(round(time.time() *1000))
-    return retval
-
-
-
 
 
 if __name__ == "__main__":
@@ -236,6 +225,8 @@ if __name__ == "__main__":
 
     pp.pprint(msg_rsp_dict)
 
-    something = make_response_msg()
+    something = OC2Msg()
+    something.body.openc2 = OC2RspParent()
+    something.headers.created = int(round(time.time() *1000))
     print(something)
 

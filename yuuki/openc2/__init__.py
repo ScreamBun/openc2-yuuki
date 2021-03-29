@@ -11,7 +11,6 @@ from .oc2_types import (
     Pair,
     StatusCode,
     OC2Rsp,
-    OC2Msg,
-    make_response_msg
+    OC2Msg
 )
 
