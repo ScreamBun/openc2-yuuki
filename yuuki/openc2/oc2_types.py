@@ -130,7 +130,7 @@ class OC2Cmd():
         
         for attr_name in ['args', 'actuator', 'command_id']:
             if attr_name in a_dict.keys():
-                setattr(self, attr_name, a_dict[attr_name])
+                setattr(retval, attr_name, a_dict[attr_name])
         return retval
 
 
