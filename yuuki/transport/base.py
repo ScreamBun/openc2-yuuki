@@ -8,11 +8,11 @@ from ..openc2.oc2_types import OC2Msg, OC2Rsp, OC2RspParent, StatusCode
 
 class Transport():
     """Base class for any transports implemented."""
-    
+
     def __init__(self, transport_config):
         self.config = transport_config
         self.process_config()
-    
+
     def process_config(self):
         raise NotImplementedError
 
@@ -21,12 +21,12 @@ class Transport():
 
     def set_serialization(self, serialization):
         self.serialization = serialization
-    
+
     def start(self):
         raise NotImplementedError
 
     async def get_response(self, raw_data):
-        
+
         try:
             data_dict = self.serialization.deserialize(raw_data)
             pp = pprint.PrettyPrinter()
@@ -37,9 +37,16 @@ class Transport():
             retval = self.make_response_msg()
             retval.body.openc2.response.status = StatusCode.BAD_REQUEST
             retval.body.openc2.response.status_text = 'Deserialization to Python Dict failed: {}'.format(e)
-            
+
             return self.serialization.serialize(retval.to_dict())
-        
+
+        if "headers" not in data_dict.keys() or "body" not in data_dict.keys():
+            retval = self.make_response_msg()
+            retval.body.openc2.response.status = StatusCode.BAD_REQUEST
+            retval.body.openc2.response.status_text = 'Message missing headers and/or body.'
+
+            return self.serialization.serialize(retval.to_dict())
+
         try:
             oc2_msg_in = OC2Msg.init_from_dict(data_dict)
 
@@ -47,7 +54,7 @@ class Transport():
             retval = self.make_response_msg()
             retval.body.openc2.response.status = StatusCode.BAD_REQUEST
             retval.body.openc2.response.status_text = 'Conversion from Python Dict to Obj failed: {}'.format(e)
-            
+
             return self.serialization.serialize(retval.to_dict())
 
         try:
@@ -56,10 +63,10 @@ class Transport():
             retval = self.make_response_msg()
             retval.body.openc2.response.status = StatusCode.BAD_REQUEST
             retval.body.openc2.response.status_text = 'Message Dispatch failed: {}'.format(e)
-            
+
             return self.serialization.serialize(retval.to_dict())
-        
-        
+
+
         loop = asyncio.get_running_loop()
         try:
             oc2_rsp = await loop.run_in_executor(None, actuator_callable)
@@ -68,7 +75,7 @@ class Transport():
             retval = self.make_response_msg()
             retval.body.openc2.response.status = StatusCode.BAD_REQUEST
             retval.body.openc2.response.status_text = 'Actuator failed: {}'.format(e)
-            
+
             return self.serialization.serialize(retval.to_dict())
 
 
@@ -86,7 +93,7 @@ class Transport():
             retval = self.make_response_msg()
             retval.body.openc2.response.status = StatusCode.BAD_REQUEST
             retval.body.openc2.response.status_text = 'Serialization failed: {}'.format(e)
-            
+
             return self.serialization.serialize(retval.to_dict())
 
     @staticmethod

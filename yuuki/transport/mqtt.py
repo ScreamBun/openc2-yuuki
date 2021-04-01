@@ -22,8 +22,11 @@ from math import inf
 from dataclasses import dataclass, field
 from typing import List, Optional
 import pprint
-import paho.mqtt.client as mqtt
 from .base import Transport
+
+import paho.mqtt.client as mqtt
+from paho.mqtt.properties import Properties
+from paho.mqtt.packettypes import PacketTypes
 
 # ----- Configuration ----
 
@@ -67,10 +70,6 @@ class Publish():
     qos : int = 1
 
 @dataclass
-class OpenC2Options():
-    use_oc2_mqtt_header : bool = True
-
-@dataclass
 class MqttConfig():
     '''Configuration object to be passed to Mqtt Transport init.
 
@@ -83,7 +82,6 @@ class MqttConfig():
     broker : BrokerConfig = field(default_factory=BrokerConfig)
     subscriptions : List[Subscription] = field(default_factory=lambda : [Subscription()])
     publishes : List[Publish] = field(default_factory=lambda : [Publish()])
-    oc2_options : OpenC2Options = field(default_factory=OpenC2Options)
     
 
 
@@ -122,43 +120,11 @@ class Mqtt(Transport):
         loop = asyncio.get_event_loop()
         loop.run_until_complete(mqtt_client.main())
 
-    def handle_byte_header_in(self, raw_data: bytes):
-        header_bytes = raw_data[0:2]
-        raw_data = raw_data[2:]
-        error_msgs = []
-
-        fixed_4 = int(header_bytes.hex(), 16) >> 12
-        msg_type_4 = (int(header_bytes.hex(), 16) & int('0FFF',16)) >> 8
-        serial_8 = int(header_bytes.hex(), 16) & int('00FF', 16)
-
-        if fixed_4 != 9:
-            error_msgs.append('First 4 bits of header should be 1001 (decimal 9), but header is {}'.format(header_bytes))
-        if msg_type_4 != 0:
-            error_msgs.append('Second 4 bits of header should be 0 for request, but header is {}'.format(header_bytes))
-        if serial_8 != 1:
-            error_msgs.append('Second byte of header should be 1 for hardcoded JSON, but header is {}'.format(header_bytes))
-
-        if len(error_msgs) > 0:
-            for msg in error_msgs:
-                logging.error(msg)
-            raise ValueError('Bad MQTT 2 byte header. Is it missing? Received {}'.format(header_bytes))
-        return raw_data
-    
-    def handle_byte_header_out(self, serialized_msg):
-        header_bytes = bytes.fromhex('9101')
-        serialized_msg = header_bytes + bytes(serialized_msg, 'utf-8')
-        return serialized_msg
-
     
     async def on_oc2_msg(self, raw_data, response_queue):
         '''Called whenever our real mqtt client gets a message'''
-        if self.config.oc2_options.use_oc2_mqtt_header:
-            raw_data = self.handle_byte_header_in(raw_data)
         try:
             result = await self.get_response(raw_data)
-            if self.config.oc2_options.use_oc2_mqtt_header:
-                result = self.handle_byte_header_out(result)
-
             response_queue.put_nowait(result)
         except Exception as e:
             logging.error('Message Handling Failed {}'.format(e))
@@ -206,7 +172,7 @@ class _MqttClient():
         self.disconnected = self.loop.create_future()
 
     def setup_client(self):
-        self._client = mqtt.Client(client_id=self.client_id)
+        self._client = mqtt.Client(client_id=self.client_id, protocol=mqtt.MQTTv5)
         self._client.on_connect     = self._on_connect
         self._client.on_disconnect  = self._on_disconnect
         self._client.on_subscribe   = self._on_subscribe
@@ -225,25 +191,26 @@ class _MqttClient():
     def _on_log(self, client, userdata, level, buf):
         pass
 
-    def _on_connect(self, client, userdata, flags, rc):
+    def _on_connect(self, client, userdata, flags, reasonCode, properties):
         logging.debug('OnConnect')
         for sub_info in self.cmd_subs:
             self.subscribe(sub_info.topic_filter, sub_info.qos)
 
-    def _on_subscribe(self, client, userdata, mid, granted_qos):
+    def _on_subscribe(self, client, userdata, mid, reasonCodes, properties):
         logging.debug('OnSubscribe')
 
-    def _on_unsubscribe(self, client, userdata, mid):
+    def _on_unsubscribe(self, client, userdata, mid, properties, reasonCodes):
         pass
 
     def _on_publish(self, client, userdata, mid):
         logging.debug('OnPublish')
 
     def _on_message(self, client, userdata, msg):
-        logging.debug('OnMessage: {}'.format( msg.payload))
+        logging.debug('OnMessage: {}'.format(msg.payload))
+        logging.debug('Message Properties: {}'.format(msg.properties))
         self.in_msg_queue.put_nowait(msg.payload)
         
-    def _on_disconnect(self, client, userdata, rc):
+    def _on_disconnect(self, client, userdata, reasonCode, properties):
         logging.debug('OnDisconnect')
         self.disconnected.set_result('disconnected')
     
@@ -296,7 +263,7 @@ class _MqttClient():
                 logging.info('Will use TLS')
                 self._client.tls_set(ca_certs=self.ca_certs, certfile=self.certfile, keyfile=self.keyfile)
             logging.info('Connecting --> {}:{} --> keep_alive:{} ...'.format(self.host, self.port, self.keep_alive))
-            self._client.connect(self.host, self.port, keepalive=self.keep_alive)
+            self._client.connect(self.host, self.port, keepalive=self.keep_alive, properties=None)
             
         except ConnectionRefusedError:
             logging.error('BrokerConfig at {}:{} refused connection'.format(self.host,self.port))
@@ -304,13 +271,19 @@ class _MqttClient():
         
         self._client.socket().setsockopt(socket.SOL_SOCKET, socket.SO_SNDBUF, 2048)
 
-    def subscribe(self,topic_filter, qos):
-        logging.info('Subscribing --> {} {} ...'.format( topic_filter, qos))
+    def subscribe(self, topic_filter, qos):
+        logging.info('Subscribing --> {} {} ...'.format(topic_filter, qos))
         self._client.subscribe(topic_filter, qos)
     
     def publish(self, topic, payload, qos):
         try:
-            msg_info = self._client.publish(topic, payload=payload, qos=qos)
+            oc2_properties = Properties(PacketTypes.PUBLISH)
+            oc2_properties.PayloadFormatIndicator = 1
+            oc2_properties.ContentType = "application/openc2"
+            oc2_properties.UserProperty = [("msgType", "rsp"), ("encoding", "json")]
+
+            msg_info = self._client.publish(topic, payload=payload, qos=qos, properties=oc2_properties)
+
             logging.info('Publishing --> qos: {} \n{}'.format(qos, payload ))
         except Exception as e:
             logging.error('Publish failed', e)
@@ -323,4 +296,3 @@ class _MqttClient():
             await self.disconnected 
         except asyncio.CancelledError:
             pass
-    

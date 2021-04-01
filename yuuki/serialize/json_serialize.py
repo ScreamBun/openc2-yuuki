@@ -9,7 +9,6 @@ class Json(_Serializer):
     @staticmethod
     def serialize(obj : OC2Rsp):
         logging.debug('Json Serialize {} {}'.format( type(obj), obj))
-        #return json.dumps(obj)
         return _JsonEncoder().encode(obj)
 
     @staticmethod
