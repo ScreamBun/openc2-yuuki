@@ -41,7 +41,8 @@ class Transport:
             return self.serialization.serialize(oc2_msg.to_dict())
 
         if "headers" not in data_dict.keys() or "body" not in data_dict.keys():
-            oc2_msg = self.make_response_msg(StatusCode.BAD_REQUEST, 'OpenC2 message missing headers and/or body.', None)
+            oc2_msg = self.make_response_msg(StatusCode.BAD_REQUEST,
+                                             'OpenC2 message missing headers and/or body.', None)
             return self.serialization.serialize(oc2_msg.to_dict())
 
         try:
@@ -54,7 +55,8 @@ class Transport:
         try:
             actuator_callable = self.cmd_handler.get_actuator_callable(oc2_msg_in)
         except Exception as e:
-            oc2_msg = self.make_response_msg(StatusCode.BAD_REQUEST, 'Message Dispatch failed: {}'.format(e), oc2_msg_in.headers.from_)
+            oc2_msg = self.make_response_msg(StatusCode.BAD_REQUEST, 'Message Dispatch failed: {}'.format(e),
+                                             oc2_msg_in.headers.from_)
             return self.serialization.serialize(oc2_msg.to_dict())
 
         loop = asyncio.get_running_loop()
@@ -62,7 +64,8 @@ class Transport:
         try:
             oc2_rsp = await loop.run_in_executor(None, actuator_callable)
         except Exception as e:
-            oc2_msg = self.make_response_msg(StatusCode.BAD_REQUEST, 'Actuator failed: {}'.format(e), oc2_msg_in.headers.from_)
+            oc2_msg = self.make_response_msg(StatusCode.BAD_REQUEST, 'Actuator failed: {}'.format(e),
+                                             oc2_msg_in.headers.from_)
             return self.serialization.serialize(oc2_msg.to_dict())
 
         try:
@@ -72,7 +75,8 @@ class Transport:
             serialized = self.serialization.serialize(oc2_msg_out.to_dict())
             return serialized
         except Exception as e:
-            oc2_msg = self.make_response_msg(StatusCode.BAD_REQUEST, 'Serialization failed: {}'.format(e), oc2_msg_in.headers.from_)
+            oc2_msg = self.make_response_msg(StatusCode.BAD_REQUEST, 'Serialization failed: {}'.format(e),
+                                             oc2_msg_in.headers.from_)
             return self.serialization.serialize(oc2_msg.to_dict())
 
     @staticmethod

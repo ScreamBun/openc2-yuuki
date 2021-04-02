@@ -1,6 +1,6 @@
 
 
-class Consumer():
+class Consumer:
     """Main Yuuki class to run your consumer.
 
     Supply a cmd_handler, transport, and serialization,

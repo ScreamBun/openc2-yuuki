@@ -25,25 +25,28 @@ from quart import (
 
 from .base import Transport
 
-@dataclass
-class HttpConfig():
-    '''Simple Http Configuration to pass to Http Transport init.'''
+from ..openc2.oc2_types import StatusCode
 
-    consumer_socket : str = '127.0.0.1:9001'
-    use_tls : bool = False
+
+@dataclass
+class HttpConfig:
+    """Simple Http Configuration to pass to Http Transport init."""
+
+    consumer_socket: str = '127.0.0.1:9001'
+    use_tls: bool = False
     certfile: Optional[str] = None
-    keyfile:  Optional[str] = None
+    keyfile: Optional[str] = None
     ca_certs: Optional[str] = None
 
 
 class Http(Transport):
-    '''Implements Transport base class for HTTP'''
+    """Implements Transport base class for HTTP"""
 
-    def __init__(self, http_config : HttpConfig):
+    def __init__(self, http_config: HttpConfig):
         super().__init__(http_config)
         self.app = Quart(__name__)
         self.setup(self.app)
-    
+
     def process_config(self):
         self.host, port = self.config.consumer_socket.split(':')
         self.port = int(port)
@@ -51,12 +54,17 @@ class Http(Transport):
         if self.config.use_tls:
             if self.config.certfile is None or self.config.keyfile is None:
                 raise ValueError('TLS requires a keyfile and certfile.')
-    
+
     def setup(self, app):
         @app.route('/', methods=['POST'])
         async def receive():
-            raw_data = await request.get_data()
-            oc2_rsp = await self.get_response(raw_data)
+            if self.verify_request(request):
+                raw_data = await request.get_data()
+                oc2_rsp = await self.get_response(raw_data)
+            else:
+                response = self.make_response_msg(StatusCode.BAD_REQUEST, 'Malformed HTTP Request', None)
+                oc2_rsp = self.serialization.serialize(response.to_dict())
+
             http_response = await make_response(oc2_rsp)
             http_response.content_type = 'application/openc2-rsp+json;version=1.0'
             return http_response
@@ -64,10 +72,17 @@ class Http(Transport):
     def start(self):
         if self.config.use_tls:
             self.app.run(port=self.port, host=self.host,
-                certfile=self.config.certfile, 
-                keyfile=self.config.keyfile, 
-                ca_certs=self.config.ca_certs)
+                         certfile=self.config.certfile,
+                         keyfile=self.config.keyfile,
+                         ca_certs=self.config.ca_certs)
         else:
             self.app.run(port=self.port, host=self.host)
-        
 
+    @staticmethod
+    def verify_request(http_request):
+        if http_request.method == 'POST':
+            headers = http_request.headers
+            if 'Host' and 'Content-type' in headers:
+                if headers['Content-type'] == "application/openc2-cmd+json;version=1.0":
+                    return True
+        return False
