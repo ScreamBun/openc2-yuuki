@@ -129,8 +129,8 @@ class Mqtt(Transport):
         if self.verify_properties(msg.properties):
             oc2_msg = await self.get_response(msg.payload)
         else:
-            oc2_rsp = OC2Rsp(status=StatusCode.BAD_REQUEST, status_text='Malformed MQTT Properties')
-            oc2_msg = self.make_response_msg(oc2_rsp, None)
+            oc2_body = OC2Rsp(status=StatusCode.BAD_REQUEST, status_text='Malformed MQTT Properties')
+            oc2_msg = self.make_response_msg(oc2_body, None)
         try:
             response_queue.put_nowait(oc2_msg)
         except Exception as e:

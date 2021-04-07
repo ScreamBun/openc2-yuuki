@@ -153,7 +153,7 @@ class OC2CmdParent:
 # ---Message---
 
 @dataclass
-class Headers:
+class OC2Headers:
     request_id: Optional[str] = None
     created: Optional[int] = None
     from_: Optional[str] = None
@@ -171,7 +171,7 @@ class Headers:
 
 
 @dataclass
-class Body:
+class OC2Body:
     openc2: Union[OC2CmdParent, OC2RspParent, OC2NfyParent] = field(default_factory=OC2CmdParent)
 
     @classmethod
@@ -189,16 +189,16 @@ class Body:
 
 @dataclass
 class OC2Msg:
-    headers: Headers = field(default_factory=Headers)
-    body: Body = field(default_factory=Body)
+    headers: OC2Headers = field(default_factory=OC2Headers)
+    body: OC2Body = field(default_factory=OC2Body)
 
     @classmethod
     def init_from_dict(cls, a_dict):
         retval = cls()
         if 'headers' in a_dict.keys():
-            retval.headers = Headers.init_from_dict(a_dict['headers'])
+            retval.headers = OC2Headers.init_from_dict(a_dict['headers'])
         if 'body' in a_dict.keys():
-            retval.body = Body.init_from_dict(a_dict['body'])
+            retval.body = OC2Body.init_from_dict(a_dict['body'])
         return retval
 
     def to_dict(self):

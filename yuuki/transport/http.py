@@ -62,8 +62,8 @@ class Http(Transport):
                 raw_data = await request.get_data()
                 oc2_msg = await self.get_response(raw_data)
             else:
-                oc2_rsp = OC2Rsp(status=StatusCode.BAD_REQUEST, status_text='Malformed HTTP Request')
-                oc2_msg = self.make_response_msg(oc2_rsp, None)
+                oc2_body = OC2Rsp(status=StatusCode.BAD_REQUEST, status_text='Malformed HTTP Request')
+                oc2_msg = self.make_response_msg(oc2_body, None)
 
             http_response = await make_response(oc2_msg)
             http_response.content_type = 'application/openc2-rsp+json;version=1.0'
