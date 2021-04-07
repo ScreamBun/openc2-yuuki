@@ -25,7 +25,7 @@ from quart import (
 
 from .base import Transport
 
-from ..openc2.oc2_types import StatusCode
+from ..openc2.oc2_types import StatusCode, OC2Rsp
 
 
 @dataclass
@@ -60,11 +60,12 @@ class Http(Transport):
         async def receive():
             if self.verify_request(request):
                 raw_data = await request.get_data()
-                oc2_rsp = await self.get_response(raw_data)
+                oc2_msg = await self.get_response(raw_data)
             else:
-                oc2_rsp = self.make_response_msg(StatusCode.BAD_REQUEST, 'Malformed HTTP Request', None, None)
+                oc2_rsp = OC2Rsp(status=StatusCode.BAD_REQUEST, status_text='Malformed HTTP Request')
+                oc2_msg = self.make_response_msg(oc2_rsp, None)
 
-            http_response = await make_response(oc2_rsp)
+            http_response = await make_response(oc2_msg)
             http_response.content_type = 'application/openc2-rsp+json;version=1.0'
             return http_response
 

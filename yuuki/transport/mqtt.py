@@ -22,7 +22,7 @@ from dataclasses import dataclass, field
 from typing import List, Optional
 from .base import Transport
 
-from ..openc2.oc2_types import StatusCode
+from ..openc2.oc2_types import StatusCode, OC2Rsp
 
 import paho.mqtt.client as mqtt
 from paho.mqtt.properties import Properties
@@ -127,11 +127,12 @@ class Mqtt(Transport):
         """Called whenever our real mqtt client gets a message"""
 
         if self.verify_properties(msg.properties):
-            oc2_rsp = await self.get_response(msg.payload)
+            oc2_msg = await self.get_response(msg.payload)
         else:
-            oc2_rsp = self.make_response_msg(StatusCode.BAD_REQUEST, 'Malformed MQTT Properties', None, None)
+            oc2_rsp = OC2Rsp(status=StatusCode.BAD_REQUEST, status_text='Malformed MQTT Properties')
+            oc2_msg = self.make_response_msg(oc2_rsp, None)
         try:
-            response_queue.put_nowait(oc2_rsp)
+            response_queue.put_nowait(oc2_msg)
         except Exception as e:
             logging.error('Message Handling Failed {}'.format(e))
 
@@ -295,6 +296,7 @@ class _MqttClient:
             oc2_properties.UserProperty = [("msgType", "rsp"), ("encoding", "json")]
 
             msg_info = self._client.publish(topic, payload=payload, qos=qos, properties=oc2_properties)
+            logging.debug('Message Info: {}'.format(msg_info))
 
             logging.info('Publishing --> qos: {} \n{}'.format(qos, payload))
         except Exception as e:
