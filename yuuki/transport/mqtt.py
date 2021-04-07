@@ -135,7 +135,8 @@ class Mqtt(Transport):
         except Exception as e:
             logging.error('Message Handling Failed {}'.format(e))
 
-    def verify_properties(self, properties):
+    @staticmethod
+    def verify_properties(properties):
         logging.debug('Message Properties: {}'.format(properties))
         return (properties.PayloadFormatIndicator == 1 and
                 properties.ContentType == "application/openc2" and

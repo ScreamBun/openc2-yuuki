@@ -64,14 +64,15 @@ class Transport:
 
     def make_response_msg(self, status, status_text, to, oc2_body):
         oc2_msg = OC2Msg()
-        oc2_msg.body.openc2 = OC2RspParent()
+        if oc2_body:
+            oc2_msg.body.openc2 = OC2RspParent(oc2_body)
+        else:
+            oc2_msg.body.openc2 = OC2RspParent()
+            oc2_msg.body.openc2.response.status = status
+            oc2_msg.body.openc2.response.status_text = status_text
         oc2_msg.headers.created = int(round(time.time() * 1000))
-        oc2_msg.body.openc2.response.status = status
-        oc2_msg.body.openc2.response.status_text = status_text
         oc2_msg.headers.from_ = 'yuuki'
         oc2_msg.headers.to = to
-        if oc2_body:
-            oc2_msg.body.openc2 = oc2_body
         response = oc2_msg.to_dict()
         logging.info('Sending Response :\n{}'.format(nice_format(response)))
         oc2_rsp = self.serialization.serialize(response)

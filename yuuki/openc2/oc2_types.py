@@ -72,7 +72,6 @@ class OC2Rsp:
         for attr_name in ['status_text', 'results']:
             if getattr(self, attr_name) is not None:
                 retval.append(attr_name)
-
         return retval
 
     @classmethod
@@ -125,7 +124,6 @@ class OC2Cmd:
         for attr_name in ['args', 'actuator', 'command_id']:
             if getattr(self, attr_name) is not None:
                 retval.append(attr_name)
-
         return retval
 
     @classmethod
@@ -169,7 +167,6 @@ class Headers:
                 setattr(retval, attr_name, a_dict[attr_name])
         if 'from' in a_dict.keys():
             setattr(retval, 'from_', a_dict['from'])
-
         return retval
 
 
@@ -209,5 +206,4 @@ class OC2Msg:
         if 'headers' in retval.keys():
             if 'from_' in retval['headers'].keys():
                 retval['headers']['from'] = retval['headers'].pop('from_')
-
         return retval
