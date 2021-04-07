@@ -8,7 +8,6 @@ from .command_decorators import _OC2PairMeta
 from ..oc2_types import OC2Cmd, OC2Rsp, OC2Msg, StatusCode
 
 
-
 class OpenC2CmdDispatchBase(metaclass=_OC2PairMeta):
     """Base class to use for your OpenC2 Command Handler.
 
@@ -38,7 +37,8 @@ class OpenC2CmdDispatchBase(metaclass=_OC2PairMeta):
     See the implementation of get_actuator_callable for details.
 
     """
-    def __init__(self,validator):
+
+    def __init__(self, validator):
         """ validator is any callable that takes a Python dictionary,
         that returns an OC2Cmd Object.
         """
@@ -47,7 +47,7 @@ class OpenC2CmdDispatchBase(metaclass=_OC2PairMeta):
     @property
     def rate_limit(self):
         raise NotImplementedError
-    
+
     @property
     def versions(self):
         raise NotImplementedError
@@ -69,11 +69,13 @@ class OpenC2CmdDispatchBase(metaclass=_OC2PairMeta):
                 pairs[action] = [target]
         return pairs
 
-    def get_actuator_callable(self,oc2_msg: OC2Msg):
+    def get_actuator_callable(self, oc2_msg: OC2Msg):
         func_name = None
         func = None
+
         logging.debug('Validating...')
-        #oc2_cmd = self.validator(data_dict)
+        logging.info('oc2_msg:\n{}'.format(oc2_msg))
+        # oc2_cmd = self.validator(oc2_msg)
         oc2_cmd = oc2_msg.body.openc2.request
         cmd_actuator_nsid = None
 
@@ -90,7 +92,7 @@ class OpenC2CmdDispatchBase(metaclass=_OC2PairMeta):
 
         elif (cmd_action in self.oc2_methods_dict.keys() and
               cmd_target in self.oc2_methods_dict[cmd_action].keys()):
-                
+
             if cmd_actuator_nsid is None:
                 # Grab the first matching action-target pair. 
                 # Behavior of duplicate action-target pair functions (and their response(s))
@@ -99,7 +101,7 @@ class OpenC2CmdDispatchBase(metaclass=_OC2PairMeta):
 
                 first_actuator_nsid, = self.oc2_methods_dict[cmd_action][cmd_target].keys()
                 func_name = self.oc2_methods_dict[cmd_action][cmd_target][first_actuator_nsid]
-                
+
             else:
                 if cmd_actuator_nsid in self.oc2_methods_dict[cmd_action][cmd_target].keys():
                     func_name = self.oc2_methods_dict[cmd_action][cmd_target][cmd_actuator_nsid]
@@ -109,17 +111,15 @@ class OpenC2CmdDispatchBase(metaclass=_OC2PairMeta):
 
         else:
             func_name = getattr(self, 'oc2_no_matching_pair')
-        
-            
+
         if func_name is not None:
             func = getattr(self, func_name)
         else:
-            raise NotImplementedError('No function defined for: ',oc2_cmd)
+            raise NotImplementedError('No function defined for: ', oc2_cmd)
 
         logging.debug('Will call a method named: {}'.format(func_name))
         my_callable = partial(func, oc2_cmd)
         return my_callable
-
 
     def query_features(self, oc2_cmd: OC2Cmd):
         """
@@ -136,13 +136,13 @@ class OpenC2CmdDispatchBase(metaclass=_OC2PairMeta):
                     args_response_requested = value
                 else:
                     args_other = str(args_other) + str(key) + str(value)
-        
+
         if args_response_requested is not None and args_response_requested != 'complete':
             return OC2Rsp(status=StatusCode.BAD_REQUEST,
-                               status_text='Only arg response_requested=complete allowed')
+                          status_text='Only arg response_requested=complete allowed')
         if args_other is not None:
             return OC2Rsp(status=StatusCode.BAD_REQUEST,
-                               status_text='Only arg response_requested allowed')
+                          status_text='Only arg response_requested allowed')
 
         # Target Specifiers
 
@@ -159,10 +159,10 @@ class OpenC2CmdDispatchBase(metaclass=_OC2PairMeta):
                 retval_results['pairs'] = self.pairs
             else:
                 return OC2Rsp(status=StatusCode.BAD_REQUEST,
-                                   status_text='features field only allows versions, profiles, rate_limit, and pairs')
+                              status_text='features field only allows versions, profiles, rate_limit, and pairs')
 
         if len(retval_results) > 0:
             return OC2Rsp(status=StatusCode.OK,
-                               results=retval_results)
+                          results=retval_results)
         else:
             return OC2Rsp(status=StatusCode.OK)
