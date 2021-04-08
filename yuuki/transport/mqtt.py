@@ -22,7 +22,7 @@ from dataclasses import dataclass, field
 from typing import List, Optional
 from .base import Transport
 
-from ..openc2.oc2_types import StatusCode, OC2Rsp
+from ..openc2.oc2_types import StatusCode, OC2Rsp, OC2Headers
 
 import paho.mqtt.client as mqtt
 from paho.mqtt.properties import Properties
@@ -130,7 +130,7 @@ class Mqtt(Transport):
             oc2_msg = await self.get_response(msg.payload)
         else:
             oc2_body = OC2Rsp(status=StatusCode.BAD_REQUEST, status_text='Malformed MQTT Properties')
-            oc2_msg = self.make_response_msg(oc2_body, None)
+            oc2_msg = self.make_response_msg(oc2_body, OC2Headers())
         try:
             response_queue.put_nowait(oc2_msg)
         except Exception as e:
@@ -189,11 +189,7 @@ class _MqttClient:
         self._client = mqtt.Client(client_id=self.client_id, protocol=mqtt.MQTTv5)
         self._client.on_connect = self._on_connect
         self._client.on_disconnect = self._on_disconnect
-        self._client.on_subscribe = self._on_subscribe
-        self._client.on_unsubscribe = self._on_unsubscribe
         self._client.on_message = self._on_message
-        self._client.on_publish = self._on_publish
-        self._client.on_log = self._on_log
         self._client.on_socket_open = self.on_socket_open
         self._client.on_socket_close = self.on_socket_close
         self._client.on_socket_register_write = self.on_socket_register_write
@@ -202,22 +198,10 @@ class _MqttClient:
         if self.use_credentials:
             self._client.username_pw_set(self.user_name, password=self.password)
 
-    def _on_log(self, client, userdata, level, buf):
-        pass
-
     def _on_connect(self, client, userdata, flags, reasonCode, properties):
         logging.debug('OnConnect')
         for sub_info in self.cmd_subs:
             self.subscribe(sub_info.topic_filter, sub_info.qos)
-
-    def _on_subscribe(self, client, userdata, mid, reasonCodes, properties):
-        logging.debug('OnSubscribe')
-
-    def _on_unsubscribe(self, client, userdata, mid, properties, reasonCodes):
-        pass
-
-    def _on_publish(self, client, userdata, mid):
-        logging.debug('OnPublish')
 
     def _on_message(self, client, userdata, msg):
         logging.debug('OnMessage: {}'.format(msg.payload))
@@ -230,7 +214,6 @@ class _MqttClient:
     def on_socket_open(self, client, userdata, sock):
         def cb():
             client.loop_read()
-
         self.loop.add_reader(sock, cb)
         self.misc_loop_task = self.loop.create_task(self.misc_loop())
 
@@ -241,7 +224,6 @@ class _MqttClient:
     def on_socket_register_write(self, client, userdata, sock):
         def cb():
             client.loop_write()
-
         self.loop.add_writer(sock, cb)
 
     def on_socket_unregister_write(self, client, userdata, sock):
@@ -264,7 +246,6 @@ class _MqttClient:
                 except Exception as e:
                     logging.error(e)
                     raise
-
             try:
                 await asyncio.sleep(1)
             except asyncio.CancelledError:
@@ -277,11 +258,9 @@ class _MqttClient:
                 self._client.tls_set(ca_certs=self.ca_certs, certfile=self.certfile, keyfile=self.keyfile)
             logging.info('Connecting --> {}:{} --> keep_alive:{} ...'.format(self.host, self.port, self.keep_alive))
             self._client.connect(self.host, self.port, keepalive=self.keep_alive, properties=None)
-
         except ConnectionRefusedError:
             logging.error('BrokerConfig at {}:{} refused connection'.format(self.host, self.port))
             raise
-
         self._client.socket().setsockopt(socket.SOL_SOCKET, socket.SO_SNDBUF, 2048)
 
     def subscribe(self, topic_filter, qos):
@@ -297,7 +276,6 @@ class _MqttClient:
 
             msg_info = self._client.publish(topic, payload=payload, qos=qos, properties=oc2_properties)
             logging.debug('Message Info: {}'.format(msg_info))
-
             logging.info('Publishing --> qos: {} \n{}'.format(qos, payload))
         except Exception as e:
             logging.error('Publish failed', e)
