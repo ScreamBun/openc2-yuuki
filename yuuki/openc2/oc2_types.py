@@ -1,15 +1,14 @@
 """Basic OpenC2 Types: Command, Response, etc"""
 
-import time
 from collections import namedtuple
 from dataclasses import dataclass, field, asdict
-from enum import Enum
+from enum import IntEnum
 from typing import Optional, Dict, Mapping, Any, Iterable, Union
 
 Pair = namedtuple('Pair', 'action target')
 
 
-class StatusCode(Enum):
+class StatusCode(IntEnum):
     PROCESSING = 102
     OK = 200
     BAD_REQUEST = 400
@@ -53,6 +52,10 @@ class OC2Nfy:
 @dataclass
 class OC2NfyParent:
     notification: field(default_factory=OC2Nfy)
+
+    @classmethod
+    def init_from_dict(cls, a_dict):
+        pass
 
 
 # ---Response---
@@ -183,7 +186,8 @@ class OC2Body:
         elif 'response' in my_root.keys():
             retval.openc2 = OC2RspParent.init_from_dict(my_root)
         elif 'notification' in my_root.keys():
-            retval.openc2 = OC2NfyParent.init_from_dict(my_root)
+            # retval.openc2 = OC2NfyParent.init_from_dict(my_root)
+            pass
         return retval
 
 

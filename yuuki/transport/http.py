@@ -14,9 +14,10 @@ my_openc2_consumer = Consumer(transport=http_transport, ...)
 my_openc2_consumer.start()
 
 """
-
 from dataclasses import dataclass
 from typing import Optional
+
+import werkzeug
 from quart import (
     Quart,
     request,
@@ -58,12 +59,13 @@ class Http(Transport):
     def setup(self, app):
         @app.route('/', methods=['POST'])
         async def receive():
-            if self.verify_request(request):
+            encode = self.verify_request(request)
+            if encode:
                 raw_data = await request.get_data()
-                oc2_msg = await self.get_response(raw_data)
+                oc2_msg = await self.get_response(raw_data, encode)
             else:
                 oc2_body = OC2Rsp(status=StatusCode.BAD_REQUEST, status_text='Malformed HTTP Request')
-                oc2_msg = self.make_response_msg(oc2_body, OC2Headers())
+                oc2_msg = self.make_response_msg(oc2_body, OC2Headers(), encode)
 
             http_response = await make_response(oc2_msg)
             http_response.content_type = 'application/openc2-rsp+json;version=1.0'
@@ -83,6 +85,10 @@ class Http(Transport):
         if http_request.method == 'POST':
             headers = http_request.headers
             if 'Host' and 'Content-type' in headers:
-                if headers['Content-type'] == "application/openc2-cmd+json;version=1.0":
-                    return True
-        return False
+                try:
+                    encode = werkzeug.http.parse_options_header(headers['Content-type'])[0].split('/')[1].split('+')[1]
+                except IndexError:
+                    return None
+                if headers['Content-type'] == "application/openc2-cmd+{};version=1.0".format(encode):
+                    return encode
+        return None

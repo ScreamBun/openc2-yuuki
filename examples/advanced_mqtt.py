@@ -27,7 +27,6 @@ from yuuki.consumer import (
 )
 
 from yuuki.openc2.validate import validate_and_convert
-from yuuki.serialize import Json
 from yuuki.transport import (
     Mqtt,
     MqttConfig,
@@ -198,8 +197,7 @@ if __name__ == '__main__':
 
     consumer = Consumer(
         cmd_handler=CmdHandler(validator=validate_and_convert),
-        transport=Mqtt(mqtt_config),
-        serialization=Json)
+        transport=Mqtt(mqtt_config))
 
     try:
         consumer.start()

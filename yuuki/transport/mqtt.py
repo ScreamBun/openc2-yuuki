@@ -126,11 +126,12 @@ class Mqtt(Transport):
     async def on_oc2_msg(self, msg, response_queue):
         """Called whenever our real mqtt client gets a message"""
 
-        if self.verify_properties(msg.properties):
-            oc2_msg = await self.get_response(msg.payload)
+        encode = self.verify_properties(msg.properties)
+        if encode:
+            oc2_msg = await self.get_response(msg.payload, encode)
         else:
             oc2_body = OC2Rsp(status=StatusCode.BAD_REQUEST, status_text='Malformed MQTT Properties')
-            oc2_msg = self.make_response_msg(oc2_body, OC2Headers())
+            oc2_msg = self.make_response_msg(oc2_body, OC2Headers(), encode)
         try:
             response_queue.put_nowait(oc2_msg)
         except Exception as e:
@@ -139,9 +140,18 @@ class Mqtt(Transport):
     @staticmethod
     def verify_properties(properties):
         logging.debug('Message Properties: {}'.format(properties))
-        return (properties.PayloadFormatIndicator == 1 and
-                properties.ContentType == "application/openc2" and
-                properties.UserProperty == [("msgType", "req"), ("encoding", "json")])
+        payload_fmt = getattr(properties, 'PayloadFormatIndicator', None)
+        content_type = getattr(properties, 'ContentType', None)
+        user_property = getattr(properties, 'UserProperty', None)
+
+        if user_property:
+            user_props = dict(user_property)
+            if "encoding" in user_props.keys():
+                encode = user_props["encoding"]
+                if (payload_fmt == 1 and content_type == "application/openc2" and
+                        user_property == [("msgType", "req"), ("encoding", encode)]):
+                    return encode
+        return None
 
 
 class _MqttClient:
@@ -214,6 +224,7 @@ class _MqttClient:
     def on_socket_open(self, client, userdata, sock):
         def cb():
             client.loop_read()
+
         self.loop.add_reader(sock, cb)
         self.misc_loop_task = self.loop.create_task(self.misc_loop())
 
@@ -224,6 +235,7 @@ class _MqttClient:
     def on_socket_register_write(self, client, userdata, sock):
         def cb():
             client.loop_write()
+
         self.loop.add_writer(sock, cb)
 
     def on_socket_unregister_write(self, client, userdata, sock):

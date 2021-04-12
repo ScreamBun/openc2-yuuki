@@ -72,7 +72,6 @@ if __name__ == '__main__':
 
     consumer = Consumer(
         cmd_handler=CmdHandler(validator=validate_and_convert),
-        transport=Http(http_config),
-        serialization=Json)
+        transport=Http(http_config))
 
     consumer.start()
