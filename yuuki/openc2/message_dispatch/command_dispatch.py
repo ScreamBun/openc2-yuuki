@@ -70,8 +70,6 @@ class OpenC2CmdDispatchBase(metaclass=_OC2PairMeta):
         return pairs
 
     def get_actuator_callable(self, oc2_msg: OC2Msg):
-        func_name = None
-        func = None
 
         logging.debug('Validating...')
         logging.info('oc2_msg:\n{}'.format(oc2_msg))

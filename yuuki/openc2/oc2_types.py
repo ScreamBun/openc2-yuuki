@@ -70,13 +70,6 @@ class OC2Rsp:
         if self.status_text is None:
             self.status_text = self.status.text()
 
-    def keys_for_serializing(self):
-        retval = ['status']
-        for attr_name in ['status_text', 'results']:
-            if getattr(self, attr_name) is not None:
-                retval.append(attr_name)
-        return retval
-
     @classmethod
     def init_from_dict(cls, a_dict):
         retval = cls()
@@ -121,13 +114,6 @@ class OC2Cmd:
             retval, = self.actuator.keys()
             return retval
         return None
-
-    def keys_for_serializing(self):
-        retval = ['action', 'target']
-        for attr_name in ['args', 'actuator', 'command_id']:
-            if getattr(self, attr_name) is not None:
-                retval.append(attr_name)
-        return retval
 
     @classmethod
     def init_from_dict(cls, a_dict):
