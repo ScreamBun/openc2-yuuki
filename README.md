@@ -103,7 +103,7 @@ pip install ./openc2-yuuki
 Running HTTP locally shouldn't require any configuration. Run the HTTP consumer `simple_http.py` in the *examples* directory with
 
 ```sh
-python simple_http.py
+python http_example.py
 ```
 
 ## Test HTTP Transport
@@ -180,7 +180,7 @@ At the bottom of `advanced_mqtt.py` in the *examples* directory, supply the sock
 Save your file and start the advanced example:
 
 ```sh
-python advanced_mqtt.py
+python mqtt_example.py
 ```
 
 That's it! Your OpenC2 MQTT Consumer is ready for any published commands. If you're familiar with MQTT, by default Yuuki listens for OpenC2 commands on the topic **yuuki_user/oc2/cmd**, and publishes its responses to **yuuki_user/oc2/rsp**. Next, we'll write some quick scripts to make sure it's working.

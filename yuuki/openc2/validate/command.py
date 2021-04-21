@@ -25,10 +25,12 @@ def validate_and_convert(cmd: dict) -> OC2Cmd:
 
     allowed = [action, target, args, actuator, command_id]
 
-    if not all(key in [schema.name for schema in allowed] for key in cmd.keys()):
+    allowed_keys = [schema.name for schema in allowed]
+    if not all(key in allowed_keys for key in cmd.keys()):
         raise ValueError('Command has invalid fields')
 
-    if not all(key in cmd.keys() for key in [schema.name for schema in allowed if schema.required]):
+    required_keys = [schema.name for schema in allowed if schema.required]
+    if not all(key in cmd.keys() for key in required_keys):
         raise ValueError('Command is missing required fields')
 
     for schema in allowed:

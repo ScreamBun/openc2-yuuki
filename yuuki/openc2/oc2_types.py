@@ -1,11 +1,8 @@
 """Basic OpenC2 Types: Command, Response, etc"""
 
-from collections import namedtuple
 from dataclasses import dataclass, field, asdict
 from enum import IntEnum
 from typing import Optional, Dict, Mapping, Any, Iterable, Union
-
-Pair = namedtuple('Pair', 'action target')
 
 
 class StatusCode(IntEnum):

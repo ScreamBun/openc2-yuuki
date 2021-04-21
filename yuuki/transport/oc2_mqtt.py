@@ -20,7 +20,7 @@ import socket
 import logging
 from dataclasses import dataclass, field
 from typing import List, Optional
-from .base import Transport
+from .oc2_base import Transport
 
 from ..openc2.oc2_types import StatusCode, OC2Rsp, OC2Headers
 

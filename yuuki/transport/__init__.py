@@ -1,8 +1,8 @@
-from .http import (
+from .oc2_http import (
     Http,
     HttpConfig
 )
-from .mqtt import (
+from .oc2_mqtt import (
     Mqtt,
     MqttConfig,
     Authorization,
@@ -12,12 +12,12 @@ from .mqtt import (
     Subscription
 )
 
-__all__ = [ 'Http', 
-            'HttpConfig',
-            'Mqtt',
-            'MqttConfig',
-            'Authorization',
-            'Authentication',
-            'BrokerConfig',
-            'Publish',
-            'Subscription']
+__all__ = ['Http',
+           'HttpConfig',
+           'Mqtt',
+           'MqttConfig',
+           'Authorization',
+           'Authentication',
+           'BrokerConfig',
+           'Publish',
+           'Subscription']

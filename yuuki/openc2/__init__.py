@@ -8,7 +8,6 @@ from .message_dispatch import (
 from .validate import validate_and_convert
 from .oc2_types import (
     OC2Cmd,
-    Pair,
     StatusCode,
     OC2Rsp,
     OC2Msg

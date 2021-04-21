@@ -32,7 +32,8 @@ class Transport:
         try:
             data_dict = deserialize(raw_data, encode)
         except KeyError:
-            oc2_body = OC2Rsp(status=StatusCode.BAD_REQUEST, status_text='Invalid serialization protocol')
+            oc2_body = OC2Rsp(status=StatusCode.BAD_REQUEST,
+                              status_text='Invalid serialization protocol')
             return self.make_response_msg(oc2_body, OC2Headers(), 'json')
         except ValueError as e:
             oc2_body = OC2Rsp(status=StatusCode.BAD_REQUEST,
@@ -47,7 +48,8 @@ class Transport:
         logging.info('Received payload as a Python Dict:\n{}'.format(nice_format(data_dict)))
 
         if "headers" not in data_dict.keys() or "body" not in data_dict.keys():
-            oc2_body = OC2Rsp(status=StatusCode.BAD_REQUEST, status_text='OpenC2 message missing headers and/or body.')
+            oc2_body = OC2Rsp(status=StatusCode.BAD_REQUEST,
+                              status_text='OpenC2 message missing headers and/or body.')
             return self.make_response_msg(oc2_body, OC2Headers(), encode)
 
         try:
@@ -60,25 +62,29 @@ class Transport:
         try:
             actuator_callable = self.cmd_handler.get_actuator_callable(oc2_msg_in)
         except Exception as e:
-            oc2_body = OC2Rsp(status=StatusCode.BAD_REQUEST, status_text='Message Dispatch failed: {}'.format(e))
+            oc2_body = OC2Rsp(status=StatusCode.BAD_REQUEST,
+                              status_text='Message Dispatch failed: {}'.format(e))
             return self.make_response_msg(oc2_body, oc2_msg_in.headers, encode)
 
         loop = asyncio.get_running_loop()
         try:
             oc2_body = await loop.run_in_executor(None, actuator_callable)
         except Exception as e:
-            oc2_body = OC2Rsp(status=StatusCode.BAD_REQUEST, status_text='Actuator failed: {}'.format(e))
+            oc2_body = OC2Rsp(status=StatusCode.BAD_REQUEST,
+                              status_text='Actuator failed: {}'.format(e))
             return self.make_response_msg(oc2_body, OC2Headers(), encode)
 
         try:
             return self.make_response_msg(oc2_body, oc2_msg_in.headers, encode)
         except Exception as e:
-            oc2_body = OC2Rsp(status=StatusCode.NOT_FOUND, status_text='Serialization failed: {}'.format(e))
+            oc2_body = OC2Rsp(status=StatusCode.NOT_FOUND,
+                              status_text='Serialization failed: {}'.format(e))
             return self.make_response_msg(oc2_body, oc2_msg_in.headers, encode)
 
     @staticmethod
     def make_response_msg(oc2_body, headers, encode):
-        oc2_rsp = OC2Msg(headers=OC2Headers(request_id=headers.request_id, from_='yuuki', to=headers.from_,
+        oc2_rsp = OC2Msg(headers=OC2Headers(request_id=headers.request_id,
+                                            from_='yuuki', to=headers.from_,
                                             created=int(round(time.time() * 1000))),
                          body=OC2Body(openc2=OC2RspParent(oc2_body)))
         response = oc2_rsp.to_dict()

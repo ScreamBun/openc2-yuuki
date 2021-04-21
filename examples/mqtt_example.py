@@ -7,6 +7,7 @@ a Consumer with it and our chosen Transport(MQTT) and Serialization(Json).
 
 import logging
 import random
+from ipaddress import ip_network
 
 from yuuki.openc2.message_dispatch import (
     OpenC2CmdDispatchBase,
@@ -123,8 +124,22 @@ class CmdHandler(OpenC2CmdDispatchBase):
 
         return oc2_rsp
 
-    @oc2_pair('x-acme', 'detonate', 'x-acme:roadrunner')
+    @oc2_pair('slpf', 'deny', 'ipv4_net')
     def func3(self, oc2_cmd: OC2Cmd) -> OC2Rsp:
+        if isinstance(oc2_cmd.target['ipv4_net'], str):
+            try:
+                ip_network(oc2_cmd.target['ipv4_net'])
+            except ValueError:
+                return OC2Rsp(status=StatusCode.BAD_REQUEST)
+            else:
+                # Execute a real function here to deny...
+                pass
+            return OC2Rsp(status=StatusCode.OK)
+        else:
+            return OC2Rsp(status=StatusCode.BAD_REQUEST)
+
+    @oc2_pair('x-acme', 'detonate', 'x-acme:roadrunner')
+    def func4(self, oc2_cmd: OC2Cmd) -> OC2Rsp:
         """
         Custom actuator profile implementation for Road Runner hunting.
         """
@@ -139,7 +154,7 @@ class CmdHandler(OpenC2CmdDispatchBase):
                 status_text='Coyote can never win')
 
     @oc2_no_matching_pair
-    def func4(self, oc2_cmd: OC2Cmd) -> OC2Rsp:
+    def func5(self, oc2_cmd: OC2Cmd) -> OC2Rsp:
         """
         We've searched all our action-target pairs from all our
         actuators, and that pair doesn't exist.
@@ -151,7 +166,7 @@ class CmdHandler(OpenC2CmdDispatchBase):
         return oc2_rsp
 
     @oc2_no_matching_actuator
-    def func5(self, oc2_cmd: OC2Cmd) -> OC2Rsp:
+    def func6(self, oc2_cmd: OC2Cmd) -> OC2Rsp:
         """
         We have a matching action-target pair in our actuator(s),
         but we don't have the requested actuator (nsid).

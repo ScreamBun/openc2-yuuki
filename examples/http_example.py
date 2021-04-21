@@ -5,10 +5,11 @@ First a Command Handler is defined, then we instantiate
 a Consumer with it and our chosen Transport(HTTP) and Serialization(Json).
 
 To keep the file short and sweet, we use wildcard * imports and no comments.
-See the advanced_mqtt.py for details.
+See the mqtt_example.py for details.
 """
 
 import logging
+from ipaddress import ip_network
 from yuuki import *
 
 logging.basicConfig(format='%(levelname)s:%(message)s', level=logging.DEBUG)
@@ -54,16 +55,30 @@ class CmdHandler(OpenC2CmdDispatchBase):
 
         return OC2Rsp(status=StatusCode.OK)
 
-    @oc2_pair('x-acme', 'detonate', 'x-acme:roadrunner')
+    @oc2_pair('slpf', 'deny', 'ipv4_net')
     def func3(self, oc2_cmd: OC2Cmd) -> OC2Rsp:
+        if isinstance(oc2_cmd.target['ipv4_net'], str):
+            try:
+                ip_network(oc2_cmd.target['ipv4_net'])
+            except ValueError:
+                return OC2Rsp(status=StatusCode.BAD_REQUEST)
+            else:
+                # Execute a real function here to deny...
+                pass
+            return OC2Rsp(status=StatusCode.OK)
+        else:
+            return OC2Rsp(status=StatusCode.BAD_REQUEST)
+
+    @oc2_pair('x-acme', 'detonate', 'x-acme:roadrunner')
+    def func4(self, oc2_cmd: OC2Cmd) -> OC2Rsp:
         raise SystemError('Impossible! Coyote never wins!')
 
     @oc2_no_matching_pair
-    def func4(self, oc2_cmd: OC2Cmd) -> OC2Rsp:
+    def func5(self, oc2_cmd: OC2Cmd) -> OC2Rsp:
         return OC2Rsp(status=StatusCode.NOT_FOUND)
 
     @oc2_no_matching_actuator
-    def func5(self, oc2_cmd: OC2Cmd) -> OC2Rsp:
+    def func6(self, oc2_cmd: OC2Cmd) -> OC2Rsp:
         return OC2Rsp(status=StatusCode.NOT_FOUND)
 
 

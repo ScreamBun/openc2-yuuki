@@ -24,7 +24,7 @@ from quart import (
     make_response
 )
 
-from .base import Transport
+from .oc2_base import Transport
 
 from ..openc2.oc2_types import StatusCode, OC2Rsp, OC2Headers
 
@@ -59,7 +59,7 @@ class Http(Transport):
     def setup(self, app):
         @app.route('/', methods=['POST'])
         async def receive():
-            encode = self.verify_request(request)
+            encode = self.verify_headers(request.headers)
             if encode:
                 raw_data = await request.get_data()
                 oc2_msg = await self.get_response(raw_data, encode)
@@ -81,14 +81,12 @@ class Http(Transport):
             self.app.run(port=self.port, host=self.host)
 
     @staticmethod
-    def verify_request(http_request):
-        if http_request.method == 'POST':
-            headers = http_request.headers
-            if 'Host' and 'Content-type' in headers:
-                try:
-                    encode = werkzeug.http.parse_options_header(headers['Content-type'])[0].split('/')[1].split('+')[1]
-                except IndexError:
-                    return None
-                if headers['Content-type'] == "application/openc2-cmd+{};version=1.0".format(encode):
-                    return encode
+    def verify_headers(headers):
+        if 'Host' and 'Content-type' in headers:
+            try:
+                encode = werkzeug.http.parse_options_header(headers['Content-type'])[0].split('/')[1].split('+')[1]
+            except IndexError:
+                return None
+            if headers['Content-type'] == "application/openc2-cmd+{};version=1.0".format(encode):
+                return encode
         return None
