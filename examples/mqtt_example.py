@@ -108,21 +108,14 @@ class CmdHandler(OpenC2CmdDispatchBase):
                     found_other.append(key)
 
         if len(found_keys) < 1 or len(found_other) > 0:
-            oc2_rsp = OC2Rsp(
-                status=StatusCode.BAD_REQUEST,
-                status_text='Any of {} required for ipv4_connection'.format(str(allowed_keys)))
-            return oc2_rsp
+            return OC2Rsp(status=StatusCode.BAD_REQUEST,
+                          status_text=f'Any of {str(allowed_keys)} required for ipv4_connection')
 
         # Execute a firewall function here to deny...
 
         # For now, return what we would do.
-        status_text = 'Denied ipv4_connection: {}'.format(oc2_cmd.target['ipv4_connection'])
-
-        oc2_rsp = OC2Rsp(
-            status=StatusCode.OK,
-            status_text=status_text)
-
-        return oc2_rsp
+        status_text = f'Denied ipv4_connection: {oc2_cmd.target["ipv4_connection"]}'
+        return OC2Rsp(status=StatusCode.OK, status_text=status_text)
 
     @oc2_pair('slpf', 'deny', 'ipv4_net')
     def func3(self, oc2_cmd: OC2Cmd) -> OC2Rsp:
@@ -149,9 +142,7 @@ class CmdHandler(OpenC2CmdDispatchBase):
         if coyote_success:
             raise SystemError('Example of how exceptions here are caught')
         else:
-            return OC2Rsp(
-                status=StatusCode.INTERNAL_ERROR,
-                status_text='Coyote can never win')
+            return OC2Rsp(status=StatusCode.INTERNAL_ERROR, status_text='Coyote can never win')
 
     @oc2_no_matching_pair
     def func5(self, oc2_cmd: OC2Cmd) -> OC2Rsp:
@@ -159,11 +150,8 @@ class CmdHandler(OpenC2CmdDispatchBase):
         We've searched all our action-target pairs from all our
         actuators, and that pair doesn't exist.
         """
-        oc2_rsp = OC2Rsp(
-            status=StatusCode.NOT_FOUND,
-            status_text='No action-target pair for {} {}'.format(oc2_cmd.action, oc2_cmd.target_name))
-
-        return oc2_rsp
+        return OC2Rsp(status=StatusCode.NOT_FOUND,
+                      status_text=f'No action-target pair for {oc2_cmd.action} {oc2_cmd.target_name}')
 
     @oc2_no_matching_actuator
     def func6(self, oc2_cmd: OC2Cmd) -> OC2Rsp:
@@ -172,11 +160,7 @@ class CmdHandler(OpenC2CmdDispatchBase):
         but we don't have the requested actuator (nsid).
         """
         actuator_name, = oc2_cmd.actuator.keys()
-        oc2_rsp = OC2Rsp(
-            status=StatusCode.NOT_FOUND,
-            status_text='No actuator {}'.format(actuator_name))
-
-        return oc2_rsp
+        return OC2Rsp(status=StatusCode.NOT_FOUND, status_text=f'No actuator {actuator_name}')
 
 
 if __name__ == '__main__':

@@ -72,7 +72,7 @@ class OpenC2CmdDispatchBase(metaclass=_OC2PairMeta):
     def get_actuator_callable(self, oc2_msg: OC2Msg):
 
         logging.debug('Validating...')
-        logging.info('oc2_msg:\n{}'.format(oc2_msg))
+        logging.info(f'oc2_msg:\n{oc2_msg}')
         # oc2_cmd = self.validator(oc2_msg)
         oc2_cmd = oc2_msg.body.openc2.request
         cmd_actuator_nsid = None
@@ -115,7 +115,7 @@ class OpenC2CmdDispatchBase(metaclass=_OC2PairMeta):
         else:
             raise NotImplementedError('No function defined for: ', oc2_cmd)
 
-        logging.debug('Will call a method named: {}'.format(func_name))
+        logging.debug(f'Will call a method named: {func_name}')
         my_callable = partial(func, oc2_cmd)
         return my_callable
 

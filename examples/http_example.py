@@ -75,18 +75,17 @@ class CmdHandler(OpenC2CmdDispatchBase):
 
     @oc2_no_matching_pair
     def func5(self, oc2_cmd: OC2Cmd) -> OC2Rsp:
-        return OC2Rsp(status=StatusCode.NOT_FOUND)
+        return OC2Rsp(status=StatusCode.NOT_FOUND,
+                      status_text=f'No action-target pair for {oc2_cmd.action} {oc2_cmd.target_name}')
 
     @oc2_no_matching_actuator
     def func6(self, oc2_cmd: OC2Cmd) -> OC2Rsp:
-        return OC2Rsp(status=StatusCode.NOT_FOUND)
+        actuator_name, = oc2_cmd.actuator.keys()
+        return OC2Rsp(status=StatusCode.NOT_FOUND, status_text=f'No actuator {actuator_name}')
 
 
 if __name__ == '__main__':
     http_config = HttpConfig()
 
-    consumer = Consumer(
-        cmd_handler=CmdHandler(validator=validate_and_convert),
-        transport=Http(http_config))
-
+    consumer = Consumer(cmd_handler=CmdHandler(validator=validate_and_convert), transport=Http(http_config))
     consumer.start()

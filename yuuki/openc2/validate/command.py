@@ -13,7 +13,7 @@ def validate_and_convert(cmd: dict) -> OC2Cmd:
 
     if not isinstance(cmd, dict):
         the_type = type(cmd)
-        raise ValueError('Received cmd is not a dict: {}'.format(the_type))
+        raise ValueError(f'Received cmd is not a dict: {the_type}')
 
     FieldSchema = namedtuple('FieldSchema', 'name type required validators')
 

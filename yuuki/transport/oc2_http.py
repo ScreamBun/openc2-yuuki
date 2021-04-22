@@ -87,6 +87,6 @@ class Http(Transport):
                 encode = werkzeug.http.parse_options_header(headers['Content-type'])[0].split('/')[1].split('+')[1]
             except IndexError:
                 return None
-            if headers['Content-type'] == "application/openc2-cmd+{};version=1.0".format(encode):
+            if headers['Content-type'] == f"application/openc2-cmd+{encode};version=1.0":
                 return encode
         return None

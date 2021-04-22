@@ -135,11 +135,11 @@ class Mqtt(Transport):
         try:
             response_queue.put_nowait(oc2_msg)
         except Exception as e:
-            logging.error('Message Handling Failed {}'.format(e))
+            logging.error(f'Message Handling Failed {e}')
 
     @staticmethod
     def verify_properties(properties):
-        logging.debug('Message Properties: {}'.format(properties))
+        logging.debug(f'Message Properties: {properties}')
         payload_fmt = getattr(properties, 'PayloadFormatIndicator', None)
         content_type = getattr(properties, 'ContentType', None)
         user_property = getattr(properties, 'UserProperty', None)
@@ -214,7 +214,7 @@ class _MqttClient:
             self.subscribe(sub_info.topic_filter, sub_info.qos)
 
     def _on_message(self, client, userdata, msg):
-        logging.debug('OnMessage: {}'.format(msg.payload))
+        logging.debug(f'OnMessage: {msg.payload}')
         self.in_msg_queue.put_nowait(msg)
 
     def _on_disconnect(self, client, userdata, reasonCode, properties=None):
@@ -268,15 +268,15 @@ class _MqttClient:
             if self.use_tls:
                 logging.info('Will use TLS')
                 self._client.tls_set(ca_certs=self.ca_certs, certfile=self.certfile, keyfile=self.keyfile)
-            logging.info('Connecting --> {}:{} --> keep_alive:{} ...'.format(self.host, self.port, self.keep_alive))
+            logging.info(f'Connecting --> {self.host}:{self.port} --> keep_alive:{self.keep_alive} ...')
             self._client.connect(self.host, self.port, keepalive=self.keep_alive, properties=None)
         except ConnectionRefusedError:
-            logging.error('BrokerConfig at {}:{} refused connection'.format(self.host, self.port))
+            logging.error(f'BrokerConfig at {self.host}:{self.port} refused connection')
             raise
         self._client.socket().setsockopt(socket.SOL_SOCKET, socket.SO_SNDBUF, 2048)
 
     def subscribe(self, topic_filter, qos):
-        logging.info('Subscribing --> {} {} ...'.format(topic_filter, qos))
+        logging.info(f'Subscribing --> {topic_filter} {qos} ...')
         self._client.subscribe(topic_filter, qos)
 
     def publish(self, topic, payload, qos):
@@ -287,8 +287,8 @@ class _MqttClient:
             oc2_properties.UserProperty = [("msgType", "rsp"), ("encoding", "json")]
 
             msg_info = self._client.publish(topic, payload=payload, qos=qos, properties=oc2_properties)
-            logging.debug('Message Info: {}'.format(msg_info))
-            logging.info('Publishing --> qos: {} \n{}'.format(qos, payload))
+            logging.debug(f'Message Info: {msg_info}')
+            logging.info(f'Publishing --> qos: {qos} \n{payload}')
         except Exception as e:
             logging.error('Publish failed', e)
 
