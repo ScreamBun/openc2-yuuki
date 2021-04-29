@@ -2,7 +2,7 @@
 
 Yuuki is a lightweight OpenC2 framework that comes with example Consumers, all built on an extensible library, with default support for **HTTP** and **MQTT** protocols. It serves a few purposes:
 
-* Provide [ready-made examples](#simple-example-http) to
+* Provide [ready-made examples](#example-http) to
   * Introduce you to OpenC2
   * Test against your own OpenC2 Producer
 * Provide a library to
@@ -10,21 +10,6 @@ Yuuki is a lightweight OpenC2 framework that comes with example Consumers, all b
   * Ease experimentation with different Transports, Serializations and Validators
 
 To jump right in, head over to the examples directory, or follow along below for a guided tour.
-
-# Closed Issues
-
-* [x] Support HTTP Transport
-* [x] Support MQTT Transport
-* [x] Support JSON serialization
-* [x] Allow swapping in new serializations
-* [x] Allow swapping in new transports
-* [x] Allow swapping in new validation
-* [x] Support TLS
-* [x] Support Running Multiple Actuator Profiles At Once
-
-# Open Issues
-
-* [ ] None! Please open a new issue! 
 
 # Yuuki
 
@@ -73,16 +58,13 @@ Yuuki is designed so that any of these steps can be customized or replaced.
 
 For all of these goals, the solution is to swap out what you'd like replace. Each step is independent of the others.
 
-For example, look at how the main OpenC2 Consumer is contructed in **simple_http.py** in the *examples* folder:
+For example, look at how the main OpenC2 Consumer is contructed in **http_example.py** in the *examples* folder:
 
 ```python
-consumer = Consumer( 
-    cmd_handler   = CmdHandler(validator = validate_and_convert),
-    transport     = Http(http_config),
-    serialization = Json )
+consumer = Consumer(cmd_handler = CmdHandler(validator = validate_and_convert), transport = Http(http_config))
 ```
 
-See the **Json**, **Http** and **validate_and_convert** arguments? Simply replace any of those with a library of your own; just as long as you follow the same Yuuki interface.
+See the **Http** and **validate_and_convert** arguments? Simply replace any of those with a library of your own; just as long as you follow the same Yuuki interface.
 
 Before getting ahead of ourselves with customization, let's just run a simple example: HTTP
 
@@ -98,9 +80,9 @@ git clone THIS_REPO
 pip install ./openc2-yuuki
 ```
 
-# Simple Example: HTTP
+# Example: HTTP
 
-Running HTTP locally shouldn't require any configuration. Run the HTTP consumer `simple_http.py` in the *examples* directory with
+Running HTTP locally shouldn't require any configuration. Run the HTTP consumer `http_example.py` in the *examples* directory with
 
 ```sh
 python http_example.py
@@ -119,42 +101,62 @@ python
 Copy this text into the shell.
 
 ```python
-import requests
+import time
 import json
 
+import requests
+
 query_features = {
-        "action": "query",
-        "target": {
-            "features": ["versions","profiles"]
-        },
-        "args": {
-            "response_requested": "complete"
+    "headers": {
+        "request_id": "abc123",
+        "created": round(time.time() * 1000),
+        "from": "Producer1"
+    },
+    "body": {
+        "openc2": {
+            "request": {
+                "action": "query",
+                "target": {
+                    "features": [
+                        "profiles"
+                    ]
+                }
+            }
         }
     }
+}
 
-as_json = json.dumps(query_features)
-headers = {"Content-Type" : "application/openc2-cmd+json;version=1.0"}
+headers = {"Content-Type": "application/openc2-cmd+json;version=1.0"}
 
-response = requests.post("http://127.0.0.1:9001", json=as_json, headers=headers, verify=False)
+response = requests.post("http://127.0.0.1:9001", json=query_features, headers=headers, verify=False)
 
-print('Sent OpenC2 Command')
 print(json.dumps(response.json(), indent=4))
-pass
+
 ```
 
 Because we're testing locally, you should instantly see the OpenC2 Response, similar to this.
 
 ```json
 {
-    "status": 200,
-    "status_text": "OK - the Command has succeeded.",
-    "results": {
-        "versions": [
-            "1.0"
-        ],
-        "profiles": [
-            "slpf"
-        ]
+    "headers": {
+        "request_id": "abc123",
+        "created": 1619554273604,
+        "to": "Producer1",
+        "from": "yuuki"
+    },
+    "body": {
+        "openc2": {
+            "response": {
+                "status": 200,
+                "status_text": "OK - the Command has succeeded.",
+                "results": {
+                    "profiles": [
+                        "slpf",
+                        "x-acme"
+                    ]
+                }
+            }
+        }
     }
 }
 ```
@@ -166,18 +168,16 @@ Success! The Yuuki Consumer successfully received an OpenC2 Command, then return
 ### Shut Down
 In the Yuuki Consumer shell, hit CTRL-C to stop the process.
 
-# Advanced Example: MQTT
+# Example: MQTT
 MQTT requires a little configuration. We'll need to connect to an MQTT broker. Mosquitto is a free broker that's always up (and offers no privacy).
 
-At the bottom of `advanced_mqtt.py` in the *examples* directory, supply the socket address for the broker.
+At the bottom of `mqtt_example.py` in the *examples* directory, supply the socket address for the broker.
 
 ```python
-    mqtt_config = MqttConfig(
-                    broker=BrokerConfig(
-                        socket='test.mosquitto.org:1883'))
+    mqtt_config = MqttConfig(broker=BrokerConfig(socket='test.mosquitto.org:1883'))
 ```
 
-Save your file and start the advanced example:
+Save your file and start the example:
 
 ```sh
 python mqtt_example.py
@@ -209,26 +209,30 @@ python
 Copy this text into the shell.
 
 ```python
-import paho.mqtt.client as mqtt
 import json
 
-def on_connect(client, userdata, flags, rc):
-    print("Connected to broker. Result:", str(rc))
-    topic_filter = "yuuki_user/oc2/rsp"
+from paho.mqtt import client as mqtt
+
+
+def on_connect(client, userdata, flags, reasonCode, properties=None):
+    print("Connected to broker. Result:", str(reasonCode))
+    topic_filter = "yuuki/oc2/rsp"
     client.subscribe(topic_filter)
     print("Listening for OpenC2 responses on", topic_filter)
 
+
 def on_message(client, userdata, msg):
-    print("MESSAGE FROM TOPIC {} START:".format(msg.topic))
+    print(f"MESSAGE FROM TOPIC {msg.topic} START:")
+    print(f"Properties: {msg.properties}")
     print(json.dumps(json.loads(msg.payload), indent=4))
     print("MESSAGE END.\n")
 
-client = mqtt.Client()
+
+client = mqtt.Client(protocol=mqtt.MQTTv5)
 client.on_connect = on_connect
 client.on_message = on_message
 client.connect("test.mosquitto.org", 1883, 60)
 client.loop_forever()
-pass
 
 ```
 
@@ -245,23 +249,43 @@ python
 Copy this text into the shell.
 
 ```python
-import paho.mqtt.publish as publish
+import time
 import json
 
-query_features = {
-        "action": "query",
-        "target": {
-            "features": ["pairs", "versions"]
-        },
-        "args": {
-            "response_requested": "complete"
+from paho.mqtt import client as mqtt
+from paho.mqtt.properties import Properties
+from paho.mqtt.packettypes import PacketTypes
+
+payload_json = {
+    "headers": {
+        "request_id": "abc123",
+        "created": round(time.time() * 1000),
+        "from": "Producer1"
+    },
+    "body": {
+        "openc2": {
+            "request": {
+                "action": "query",
+                "target": {
+                    "features": [
+                        "profiles"
+                    ]
+                }
+            }
         }
     }
+}
 
-as_json = json.dumps(query_features)
+oc2_properties = Properties(PacketTypes.PUBLISH)
+oc2_properties.PayloadFormatIndicator = 1
+oc2_properties.ContentType = "application/openc2"
+oc2_properties.UserProperty = ("msgType", "req")
+oc2_properties.UserProperty = ("encoding", "json")
 
-publish.single("yuuki_user/oc2/cmd", payload=as_json, hostname="test.mosquitto.org", port=1883)
-pass
+client = mqtt.Client(protocol=mqtt.MQTTv5)
+client.connect(host="test.mosquitto.org", port=1883, keepalive=60, clean_start=False)
+client.publish(topic="yuuki/oc2/cmd", payload=json.dumps(payload_json), qos=1, retain=False, properties=oc2_properties)
+client.disconnect()
 
 ```
 
@@ -271,15 +295,25 @@ pass
 Go back to the previous subscription shell, and there should be a JSON OpenC2 response message, similiar to this:
 ```json
 {
-    "status": 200,
-    "status_text": "OK - the Command has succeeded.",
-    "results": {
-        "versions": [
-            "1.0"
-        ],
-        "pairs": [
-            "slpf"
-        ]
+    "headers": {
+        "request_id": "abc123",
+        "created": 1617026741390,
+        "to": "Producer1",
+        "from": "yuuki"
+    },
+    "body": {
+        "openc2": {
+            "response": {
+                "status": 200,
+                "status_text": "OK - the Command has succeeded.",
+                "results": {
+                    "profiles": [
+                        "slpf",
+                        "x-acme"
+                    ]
+                }
+            }
+        }
     }
 }
 ```

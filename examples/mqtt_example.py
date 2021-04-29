@@ -185,18 +185,16 @@ if __name__ == '__main__':
                 ca_certs=None)),
         subscriptions=[
             Subscription(
-                topic_filter='patrickc/oc2/cmd',
+                topic_filter='yuuki/oc2/cmd',
                 qos=1)],
         publishes=[
             Publish(
-                topic_name='patrickc/oc2/rsp',
+                topic_name='yuuki/oc2/rsp',
                 qos=1
             )]
     )
 
-    consumer = Consumer(
-        cmd_handler=CmdHandler(validator=validate_and_convert),
-        transport=Mqtt(mqtt_config))
+    consumer = Consumer(cmd_handler=CmdHandler(validator=validate_and_convert), transport=Mqtt(mqtt_config))
 
     try:
         consumer.start()

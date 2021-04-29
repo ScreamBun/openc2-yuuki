@@ -85,7 +85,7 @@ class Transport:
     def make_response_msg(oc2_body, headers, encode):
         oc2_rsp = OC2Msg(headers=OC2Headers(request_id=headers.request_id,
                                             from_='yuuki', to=headers.from_,
-                                            created=int(round(time.time() * 1000))),
+                                            created=round(time.time() * 1000)),
                          body=OC2Body(openc2=OC2RspParent(oc2_body)))
         response = oc2_rsp.to_dict()
         logging.info(f'Sending Response :\n{nice_format(response)}')
