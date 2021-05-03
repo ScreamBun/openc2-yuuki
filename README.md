@@ -58,7 +58,7 @@ Yuuki is designed so that any of these steps can be customized or replaced.
 
 For all of these goals, the solution is to swap out what you'd like replace. Each step is independent of the others.
 
-For example, look at how the main OpenC2 Consumer is contructed in **http_example.py** in the *examples* folder:
+For example, look at how the main OpenC2 Consumer is constructed in **http_example.py** in the *examples* folder:
 
 ```python
 consumer = Consumer(cmd_handler = CmdHandler(validator = validate_and_convert), transport = Http(http_config))
@@ -163,7 +163,7 @@ Because we're testing locally, you should instantly see the OpenC2 Response, sim
 
 *When done with this Producer shell, type exit() and hit enter*
 
-Success! The Yuuki Consumer successfully received an OpenC2 Command, then returned an Openc2 Response.
+Success! The Yuuki Consumer successfully received an OpenC2 Command, then returned an OpenC2 Response.
 
 ### Shut Down
 In the Yuuki Consumer shell, hit CTRL-C to stop the process.
@@ -183,14 +183,14 @@ Save your file and start the example:
 python mqtt_example.py
 ```
 
-That's it! Your OpenC2 MQTT Consumer is ready for any published commands. If you're familiar with MQTT, by default Yuuki listens for OpenC2 commands on the topic **yuuki_user/oc2/cmd**, and publishes its responses to **yuuki_user/oc2/rsp**. Next, we'll write some quick scripts to make sure it's working.
+That's it! Your OpenC2 MQTT Consumer is ready for any published commands. If you're familiar with MQTT, by default Yuuki listens for OpenC2 commands on the topic **yuuki_user/oc2/cmd**, and publishes its responses to **yuuki_user/oc2/rsp**. Next, we'll write a quick script to make sure it's working.
 
 If you'd like to change the topics, you can like so:
 
 ```python
     mqtt_config = MqttConfig(
                     ...
-                    subscriptions=[Subscription('subcribe/to/command/topic', 1),
+                    subscriptions=[Subscription('subscribe/to/command/topic', 1),
                                    Subscription('another/command/topic', 0)],
                     publishes=[Publish('publish/responses/here', 0),
                                Publish('another/response/topic', 3)])
@@ -198,48 +198,8 @@ If you'd like to change the topics, you can like so:
 
 ## Test MQTT Transport
 
-### Subscribe to OpenC2 Responses
-In a new terminal window, go back to the root "yuuki" folder, then enable the virtual environment and start a Python shell.
-
-```sh
-source venv/bin/activate
-python
-```
-
-Copy this text into the shell.
-
-```python
-import json
-
-from paho.mqtt import client as mqtt
-
-
-def on_connect(client, userdata, flags, reasonCode, properties=None):
-    print("Connected to broker. Result:", str(reasonCode))
-    topic_filter = "yuuki/oc2/rsp"
-    client.subscribe(topic_filter)
-    print("Listening for OpenC2 responses on", topic_filter)
-
-
-def on_message(client, userdata, msg):
-    print(f"MESSAGE FROM TOPIC {msg.topic} START:")
-    print(f"Properties: {msg.properties}")
-    print(json.dumps(json.loads(msg.payload), indent=4))
-    print("MESSAGE END.\n")
-
-
-client = mqtt.Client(protocol=mqtt.MQTTv5)
-client.on_connect = on_connect
-client.on_message = on_message
-client.connect("test.mosquitto.org", 1883, 60)
-client.loop_forever()
-
-```
-
-*Later, when done with this shell, hit CTRL-C, then type exit() and hit enter*
-
 ### Publish an OpenC2 Command
-In _yet_ _another_ terminal window, enable the virtual environment and start a Python shell.
+In a new terminal window, go back to the root "yuuki" folder, then enable the virtual environment and start a Python shell.
 
 ```sh
 source venv/bin/activate
@@ -255,6 +215,7 @@ import json
 from paho.mqtt import client as mqtt
 from paho.mqtt.properties import Properties
 from paho.mqtt.packettypes import PacketTypes
+from paho.mqtt.subscribeoptions import SubscribeOptions
 
 payload_json = {
     "headers": {
@@ -279,20 +240,29 @@ payload_json = {
 oc2_properties = Properties(PacketTypes.PUBLISH)
 oc2_properties.PayloadFormatIndicator = 1
 oc2_properties.ContentType = "application/openc2"
-oc2_properties.UserProperty = ("msgType", "req")
-oc2_properties.UserProperty = ("encoding", "json")
+oc2_properties.UserProperty = [("msgType", "req"), ("encoding", "json")]
 
-client = mqtt.Client(protocol=mqtt.MQTTv5)
-client.connect(host="test.mosquitto.org", port=1883, keepalive=60, clean_start=False)
-client.publish(topic="yuuki/oc2/cmd", payload=json.dumps(payload_json), qos=1, retain=False, properties=oc2_properties)
-client.disconnect()
+
+def on_message(client, userdata, msg):
+    print(json.dumps(json.loads(msg.payload), indent=4))
+    client.disconnect()
+
+
+mqtt_client = mqtt.Client(protocol=mqtt.MQTTv5)
+mqtt_client.on_message = on_message
+mqtt_client.connect(host="test.mosquitto.org", port=1883, keepalive=60, clean_start=False)
+mqtt_client.subscribe(topic="yuuki/oc2/rsp",
+                      options=SubscribeOptions(qos=1, noLocal=True, retainAsPublished=True, retainHandling=0))
+mqtt_client.publish(topic="yuuki/oc2/cmd", payload=json.dumps(payload_json),
+                    qos=1, retain=False, properties=oc2_properties)
+mqtt_client.loop_forever()
 
 ```
 
-*Later, when done with this shell, type exit() and hit enter*
+*When done with this Producer shell, type exit() and hit enter*
 
 ### Check Results
-Go back to the previous subscription shell, and there should be a JSON OpenC2 response message, similiar to this:
+There should be a JSON OpenC2 Response message, similar to this:
 ```json
 {
     "headers": {
@@ -318,5 +288,5 @@ Go back to the previous subscription shell, and there should be a JSON OpenC2 re
 }
 ```
 
-Success! The Yuuki Consumer successfully received an OpenC2 Command, then published an Openc2 Response.
+Success! The Yuuki Consumer successfully received an OpenC2 Command, then published an OpenC2 Response.
 

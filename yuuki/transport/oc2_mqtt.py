@@ -3,7 +3,7 @@ MQTT Transport
 
 Contains the transport class to instantiate, and its config to customize.
 
-The tranport receives messages, then sends them on to a handler,
+The transport receives messages, then sends them on to a handler,
 and awaits a response to send back.
 
 Use as an argument to a Consumer constructor, eg:
