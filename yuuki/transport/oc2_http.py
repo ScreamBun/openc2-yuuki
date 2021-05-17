@@ -17,7 +17,7 @@ my_openc2_consumer.start()
 from dataclasses import dataclass
 from typing import Optional
 
-import werkzeug
+from werkzeug.http import parse_options_header, parse_accept_header
 from quart import (
     Quart,
     request,
@@ -27,6 +27,7 @@ from quart import (
 from .oc2_base import Transport
 
 from ..openc2.oc2_types import StatusCode, OC2Rsp, OC2Headers
+from ..serialization import serializations
 
 
 @dataclass
@@ -59,13 +60,19 @@ class Http(Transport):
     def setup(self, app):
         @app.route('/', methods=['POST'])
         async def receive():
-            encode = self.verify_headers(request.headers)
-            if encode:
-                raw_data = await request.get_data()
-                oc2_msg = await self.get_response(raw_data, encode)
+            decode, encode, request_id, date = self.verify_headers(request.headers)
+            if decode and encode:
+                formats = set(encode).intersection(serializations)
+                if formats:
+                    raw_data = await request.get_data()
+                    oc2_msg = await self.get_response(raw_data, (decode, formats.pop()),
+                                                      request_id=request_id, date=date, http=True)
+                else:
+                    oc2_body = OC2Rsp(status=StatusCode.BAD_REQUEST, status_text='Unsupported serialization format')
+                    oc2_msg = self.make_response_msg(oc2_body, OC2Headers(), 'json')
             else:
                 oc2_body = OC2Rsp(status=StatusCode.BAD_REQUEST, status_text='Malformed HTTP Request')
-                oc2_msg = self.make_response_msg(oc2_body, OC2Headers(), encode)
+                oc2_msg = self.make_response_msg(oc2_body, OC2Headers(), encode if encode else 'json')
 
             http_response = await make_response(oc2_msg)
             http_response.content_type = 'application/openc2-rsp+json;version=1.0'
@@ -82,11 +89,22 @@ class Http(Transport):
 
     @staticmethod
     def verify_headers(headers):
+        decode = None
+        encode = None
         if 'Host' and 'Content-type' in headers:
             try:
-                encode = werkzeug.http.parse_options_header(headers['Content-type'])[0].split('/')[1].split('+')[1]
+                decode = parse_options_header(headers['Content-type'])[0].split('/')[1].split('+')[1]
+                if not headers['Content-type'] == f'application/openc2-cmd+{decode};version=1.0':
+                    decode = None
             except IndexError:
-                return None
-            if headers['Content-type'] == f"application/openc2-cmd+{encode};version=1.0":
-                return encode
-        return None
+                decode = None
+        if 'Accept' in headers:
+            try:
+                encode = [x[0].split('/')[1].split('+')[1].split(';')[0] for x in parse_accept_header(headers['Accept'])]
+                if not headers['Accept'] == ', '.join(f'application/openc2-rsp+{x};version=1.0' for x in encode):
+                    encode = None
+            except IndexError:
+                encode = None
+        date = headers['Date'] if 'Date' in headers else None
+        request_id = headers['X-Request-ID'] if 'X-Request-ID' in headers else None
+        return decode, encode, request_id, date

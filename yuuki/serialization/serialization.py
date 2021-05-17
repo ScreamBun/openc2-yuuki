@@ -1,20 +1,22 @@
 import json
 import cbor2
 
-decode = {
+serializations = frozenset(['json', 'cbor'])
+
+_decode = {
     'json': json.loads,
     'cbor': cbor2.loads
 }
 
-encode = {
+_encode = {
     'json': json.dumps,
     'cbor': cbor2.dumps
 }
 
 
 def deserialize(data, encoding):
-    return decode[encoding](data)
+    return _decode[encoding](data)
 
 
 def serialize(data, encoding):
-    return encode[encoding](data)
+    return _encode[encoding](data)

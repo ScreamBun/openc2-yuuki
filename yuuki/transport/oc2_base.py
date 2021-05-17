@@ -4,7 +4,7 @@ import pprint
 import time
 
 from ..openc2.oc2_types import OC2Msg, OC2Headers, OC2Body, OC2Rsp, OC2RspParent, StatusCode
-from ..serialization import deserialize, serialize
+from ..serialization import deserialize, serialize, serializations
 
 
 def nice_format(output):
@@ -28,16 +28,24 @@ class Transport:
     def start(self):
         raise NotImplementedError
 
-    async def get_response(self, raw_data, encode):
+    async def get_response(self, raw_data, serial, **kwargs):
+        if isinstance(serial, tuple):
+            decode, encode = serial
+        else:
+            decode = serial
+            encode = serial
+
         try:
-            data_dict = deserialize(raw_data, encode)
-        except KeyError:
+            if encode and decode in serializations:
+                data_dict = deserialize(raw_data, decode)
+            else:
+                oc2_body = OC2Rsp(status=StatusCode.BAD_REQUEST,
+                                  status_text='Unsupported serialization protocol')
+                return self.make_response_msg(oc2_body, OC2Headers(), 'json')
+        except (ValueError, MemoryError) as e:
             oc2_body = OC2Rsp(status=StatusCode.BAD_REQUEST,
-                              status_text='Invalid serialization protocol')
-            return self.make_response_msg(oc2_body, OC2Headers(), 'json')
-        except ValueError as e:
-            oc2_body = OC2Rsp(status=StatusCode.BAD_REQUEST,
-                              status_text=f'Deserialization to Python Dict failed: {e}')
+                              status_text='Malformed request data')
+            logging.exception(f'Deserialization to Python Dict failed: {e}')
             return self.make_response_msg(oc2_body, OC2Headers(), encode)
 
         if not isinstance(data_dict, dict):
@@ -47,14 +55,22 @@ class Transport:
 
         logging.info(f'Received payload as a Python Dict:\n{nice_format(data_dict)}')
 
-        if "headers" not in data_dict.keys() or "body" not in data_dict.keys():
-            oc2_body = OC2Rsp(status=StatusCode.BAD_REQUEST,
-                              status_text='OpenC2 message missing headers and/or body.')
-            return self.make_response_msg(oc2_body, OC2Headers(), encode)
+        if 'headers' not in data_dict or 'body' not in data_dict:
+            if 'http' in kwargs:
+                data_dict = dict(body=dict(openc2=dict(request=data_dict)))
+                data_dict['headers'] = {}
+                data_dict['headers']['request_id'] = kwargs['request_id'] if 'request_id' in kwargs else None
+                data_dict['headers']['created'] = kwargs['date'] if 'date' in kwargs else None
+                data_dict['headers']['from_'] = kwargs['from_'] if 'from_' in kwargs else None
+            else:
+                oc2_body = OC2Rsp(status=StatusCode.BAD_REQUEST,
+                                  status_text='OpenC2 message missing headers and/or body.')
+                return self.make_response_msg(oc2_body, OC2Headers(), encode)
 
         try:
             oc2_msg_in = OC2Msg.init_from_dict(data_dict)
         except Exception as e:
+            logging.exception(f'Conversion from Python Dict to Obj failed: {e}')
             oc2_body = OC2Rsp(status=StatusCode.BAD_REQUEST,
                               status_text=f'Conversion from Python Dict to Obj failed: {e}')
             return self.make_response_msg(oc2_body, OC2Headers(), encode)
