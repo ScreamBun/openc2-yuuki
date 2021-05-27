@@ -20,7 +20,7 @@ import socket
 import logging
 from dataclasses import dataclass, field
 from typing import List, Optional
-from .oc2_base import Transport
+from .oc2_base import Consumer
 
 from ..openc2.oc2_types import StatusCode, OC2Rsp, OC2Headers
 
@@ -92,31 +92,29 @@ class MqttConfig:
 
 # ----- Transport -----
 
-class Mqtt(Transport):
+class Mqtt(Consumer):
     """Implements Transport base class for MQTT"""
 
-    def __init__(self, mqtt_config: MqttConfig):
-        super().__init__(mqtt_config)
+    def __init__(self, cmd_handler, mqtt_config: MqttConfig):
+        super().__init__(cmd_handler, mqtt_config)
         self.in_msg_queue = asyncio.Queue()
-
-    def process_config(self):
-        self.host, port = self.config.broker.socket.split(':')
+        self.host, port = self.transport_config.broker.socket.split(':')
         self.port = int(port)
 
     def start(self):
-        mqtt_client = _MqttClient(cmd_subs=self.config.subscriptions,
-                                  rsp_pubs=self.config.publishes,
+        mqtt_client = _MqttClient(cmd_subs=self.transport_config.subscriptions,
+                                  rsp_pubs=self.transport_config.publishes,
                                   host=self.host,
                                   port=self.port,
-                                  keep_alive=self.config.broker.keep_alive,
-                                  use_credentials=self.config.broker.authorization.enable,
-                                  user_name=self.config.broker.authorization.user_name,
-                                  password=self.config.broker.authorization.pw,
-                                  client_id=self.config.broker.client_id,
-                                  use_tls=self.config.broker.authentication.enable,
-                                  ca_certs=self.config.broker.authentication.ca_certs,
-                                  certfile=self.config.broker.authentication.certfile,
-                                  keyfile=self.config.broker.authentication.keyfile)
+                                  keep_alive=self.transport_config.broker.keep_alive,
+                                  use_credentials=self.transport_config.broker.authorization.enable,
+                                  user_name=self.transport_config.broker.authorization.user_name,
+                                  password=self.transport_config.broker.authorization.pw,
+                                  client_id=self.transport_config.broker.client_id,
+                                  use_tls=self.transport_config.broker.authentication.enable,
+                                  ca_certs=self.transport_config.broker.authentication.ca_certs,
+                                  certfile=self.transport_config.broker.authentication.certfile,
+                                  keyfile=self.transport_config.broker.authentication.keyfile)
 
         mqtt_client.msg_handler = self.on_oc2_msg
         mqtt_client.connect()
@@ -133,7 +131,7 @@ class Mqtt(Transport):
             oc2_body = OC2Rsp(status=StatusCode.BAD_REQUEST, status_text='Malformed MQTT Properties')
             oc2_msg = self.make_response_msg(oc2_body, OC2Headers(), encode)
         try:
-            response_queue.put_nowait(oc2_msg)
+            response_queue.put_nowait((oc2_msg, encode))
         except Exception as e:
             logging.error(f'Message Handling Failed {e}')
 
@@ -246,10 +244,10 @@ class _MqttClient:
             if self._client.loop_misc() != mqtt.MQTT_ERR_SUCCESS:
                 break
             while self.out_msg_queue.qsize() > 0:
-                response = self.out_msg_queue.get_nowait()
+                response, encode = self.out_msg_queue.get_nowait()
                 self.out_msg_queue.task_done()
                 for rsp_pub_info in self.rsp_pubs:
-                    self.publish(rsp_pub_info.topic_name, response, rsp_pub_info.qos)
+                    self.publish(rsp_pub_info.topic_name, response, rsp_pub_info.qos, encode)
             if self.in_msg_queue.qsize() > 0:
                 msg = self.in_msg_queue.get_nowait()
                 self.in_msg_queue.task_done()
@@ -279,12 +277,12 @@ class _MqttClient:
         logging.info(f'Subscribing --> {topic_filter} {qos} ...')
         self._client.subscribe(topic_filter, qos)
 
-    def publish(self, topic, payload, qos):
+    def publish(self, topic, payload, qos, encode):
         try:
             oc2_properties = Properties(PacketTypes.PUBLISH)
             oc2_properties.PayloadFormatIndicator = 1
             oc2_properties.ContentType = "application/openc2"
-            oc2_properties.UserProperty = [("msgType", "rsp"), ("encoding", "json")]
+            oc2_properties.UserProperty = [("msgType", "rsp"), ("encoding", encode)]
 
             msg_info = self._client.publish(topic, payload=payload, qos=qos, properties=oc2_properties)
             logging.debug(f'Message Info: {msg_info}')

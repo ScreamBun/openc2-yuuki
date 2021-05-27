@@ -12,18 +12,12 @@ def nice_format(output):
     return pp.pformat(output)
 
 
-class Transport:
+class Consumer:
     """Base class for any transports implemented."""
 
-    def __init__(self, transport_config):
-        self.config = transport_config
-        self.process_config()
-
-    def process_config(self):
-        raise NotImplementedError
-
-    def set_cmd_handler(self, cmd_handler):
+    def __init__(self, cmd_handler, transport_config):
         self.cmd_handler = cmd_handler
+        self.transport_config = transport_config
 
     def start(self):
         raise NotImplementedError
@@ -35,7 +29,7 @@ class Transport:
             oc2_body = OC2Rsp(status=StatusCode.BAD_REQUEST,
                               status_text='Invalid serialization protocol')
             return self.make_response_msg(oc2_body, OC2Headers(), 'json')
-        except ValueError as e:
+        except (ValueError, TypeError) as e:
             oc2_body = OC2Rsp(status=StatusCode.BAD_REQUEST,
                               status_text=f'Deserialization to Python Dict failed: {e}')
             return self.make_response_msg(oc2_body, OC2Headers(), encode)

@@ -10,15 +10,14 @@ See the mqtt_example.py for details.
 
 import logging
 from ipaddress import ip_network
+
 from yuuki import *
+from yuuki import Http
 
 logging.basicConfig(format='%(levelname)s:%(message)s', level=logging.DEBUG)
 
 
 class CmdHandler(OpenC2CmdDispatchBase):
-    def __init__(self, validator=None):
-        super().__init__(validator)
-
     @property
     def versions(self):
         return ['1.0']
@@ -85,7 +84,5 @@ class CmdHandler(OpenC2CmdDispatchBase):
 
 
 if __name__ == '__main__':
-    http_config = HttpConfig()
-
-    consumer = Consumer(cmd_handler=CmdHandler(validator=validate_and_convert), transport=Http(http_config))
+    consumer = Http(CmdHandler(), HttpConfig())
     consumer.start()

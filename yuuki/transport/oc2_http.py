@@ -24,14 +24,14 @@ from quart import (
     make_response
 )
 
-from .oc2_base import Transport
+from .oc2_base import Consumer
 
 from ..openc2.oc2_types import StatusCode, OC2Rsp, OC2Headers
 
 
 @dataclass
 class HttpConfig:
-    """Simple Http Configuration to pass to Http Transport init."""
+    """Http Configuration to pass to Http Transport init."""
 
     consumer_socket: str = '127.0.0.1:9001'
     use_tls: bool = False
@@ -40,20 +40,17 @@ class HttpConfig:
     ca_certs: Optional[str] = None
 
 
-class Http(Transport):
+class Http(Consumer):
     """Implements Transport base class for HTTP"""
 
-    def __init__(self, http_config: HttpConfig):
-        super().__init__(http_config)
+    def __init__(self, cmd_handler, http_config: HttpConfig):
+        super().__init__(cmd_handler, http_config)
         self.app = Quart(__name__)
         self.setup(self.app)
-
-    def process_config(self):
-        self.host, port = self.config.consumer_socket.split(':')
+        self.host, port = self.transport_config.consumer_socket.split(':')
         self.port = int(port)
-
-        if self.config.use_tls:
-            if self.config.certfile is None or self.config.keyfile is None:
+        if self.transport_config.use_tls:
+            if self.transport_config.certfile is None or self.transport_config.keyfile is None:
                 raise ValueError('TLS requires a keyfile and certfile.')
 
     def setup(self, app):
@@ -72,11 +69,11 @@ class Http(Transport):
             return http_response
 
     def start(self):
-        if self.config.use_tls:
+        if self.transport_config.use_tls:
             self.app.run(port=self.port, host=self.host,
-                         certfile=self.config.certfile,
-                         keyfile=self.config.keyfile,
-                         ca_certs=self.config.ca_certs)
+                         certfile=self.transport_config.certfile,
+                         keyfile=self.transport_config.keyfile,
+                         ca_certs=self.transport_config.ca_certs)
         else:
             self.app.run(port=self.port, host=self.host)
 

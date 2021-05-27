@@ -5,7 +5,7 @@ from .message_dispatch import (
     oc2_no_matching_actuator,
     oc2_pair
 )
-from .validate import validate_and_convert
+
 from .oc2_types import (
     OC2Cmd,
     StatusCode,

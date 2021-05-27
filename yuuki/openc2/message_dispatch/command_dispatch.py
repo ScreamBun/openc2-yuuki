@@ -38,12 +38,6 @@ class OpenC2CmdDispatchBase(metaclass=_OC2PairMeta):
 
     """
 
-    def __init__(self, validator):
-        """ validator is any callable that takes a Python dictionary,
-        that returns an OC2Cmd Object.
-        """
-        self.validator = validator
-
     @property
     def rate_limit(self):
         raise NotImplementedError
@@ -73,7 +67,6 @@ class OpenC2CmdDispatchBase(metaclass=_OC2PairMeta):
 
         logging.debug('Validating...')
         logging.info(f'oc2_msg:\n{oc2_msg}')
-        # oc2_cmd = self.validator(oc2_msg)
         oc2_cmd = oc2_msg.body.openc2.request
         cmd_actuator_nsid = None
 

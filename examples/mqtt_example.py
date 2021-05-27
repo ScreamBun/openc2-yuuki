@@ -23,11 +23,6 @@ from yuuki.openc2.oc2_types import (
     StatusCode
 )
 
-from yuuki.consumer import (
-    Consumer
-)
-
-from yuuki.openc2.validate import validate_and_convert
 from yuuki.transport import (
     Mqtt,
     MqttConfig,
@@ -54,9 +49,6 @@ class CmdHandler(OpenC2CmdDispatchBase):
     def some_method(self, OC2Command):
         return OC2Rsp
     """
-
-    def __init__(self, validator=None):
-        super().__init__(validator)
 
     @property
     def versions(self):
@@ -194,7 +186,7 @@ if __name__ == '__main__':
             )]
     )
 
-    consumer = Consumer(cmd_handler=CmdHandler(validator=validate_and_convert), transport=Mqtt(mqtt_config))
+    consumer = Mqtt(CmdHandler(), mqtt_config)
 
     try:
         consumer.start()
