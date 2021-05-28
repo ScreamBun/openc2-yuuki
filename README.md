@@ -290,3 +290,120 @@ There should be a JSON OpenC2 Response message, similar to this:
 
 Success! The Yuuki Consumer successfully received an OpenC2 Command, then published an OpenC2 Response.
 
+# Example: OpenDXL
+
+This example tests sending OpenC2 commands using both the Event and Request/Response messaging capabilities of OpenDXL.
+
+To configure Yuuki to use OpenDXL, set `CONFIG_FILE` in `oc2_opendxl.py` to the path where your `dxlclient.config` file is located.
+
+Then run the example found in the `examples` directory:
+
+```sh
+python opendxl_example.py
+```
+
+## Test OpenDXL Transport
+
+### Publish an OpenC2 Command
+In a new terminal window, go back to the root "yuuki" folder, then enable the virtual environment and start a Python shell.
+
+```sh
+source venv/bin/activate
+python
+```
+
+Set `CONFIG_FILE` to the path where your `dxlclient.config` file is located, and copy this text into the shell.
+
+```python
+import time
+import json
+
+from dxlclient import EventCallback
+from dxlclient.client import DxlClient
+from dxlclient.client_config import DxlClientConfig
+from dxlclient.message import Message, Request, Event
+
+EVENT_REQUEST_TOPIC = "/oc2/cmd"
+EVENT_RESPONSE_TOPIC = "/oc2/rsp"
+SERVICE_TOPIC = "/oc2"
+CONFIG_FILE = ""
+
+config = DxlClientConfig.create_dxl_config_from_file(CONFIG_FILE)
+
+query_features = {
+    "headers": {
+        "request_id": "abc123",
+        "created": round(time.time() * 1000),
+        "from": "Producer1"
+    },
+    "body": {
+        "openc2": {
+            "request": {
+                "action": "query",
+                "target": {
+                    "features": [
+                        "profiles"
+                    ]
+                }
+            }
+        }
+    }
+}
+
+
+class OC2EventCallback(EventCallback):
+    def on_event(self, rsp_event):
+        print("Client received response payload:\n" + str(json.loads(rsp_event.payload)))
+
+
+with DxlClient(config) as client:
+    client.connect()
+    # Request Example
+    request = Request(SERVICE_TOPIC)
+    request.payload = json.dumps(query_features)
+    request.other_fields['encoding'] = 'json'
+    request.other_fields['contentType'] = 'application/openc2'
+    request.other_fields['msgType'] = 'req'
+    response = client.sync_request(request)
+    if response.message_type != Message.MESSAGE_TYPE_ERROR:
+        print("Client received response payload:\n" + str(json.loads(response.payload)))
+    # Event Example
+    client.add_event_callback(EVENT_RESPONSE_TOPIC, OC2EventCallback())
+    event = Event(EVENT_REQUEST_TOPIC)
+    event.payload = json.dumps(query_features)
+    event.other_fields['encoding'] = 'json'
+    event.other_fields['contentType'] = 'application/openc2'
+    event.other_fields['msgType'] = 'req'
+    client.send_event(event)
+
+```
+
+*When done with this Producer shell, type exit() and hit enter*
+
+### Check Results
+There should be two JSON OpenC2 Response messages, similar to this:
+```json
+{
+    "headers": {
+        "request_id": "abc123",
+        "created": 1617026741390,
+        "to": "Producer1",
+        "from": "yuuki"
+    },
+    "body": {
+        "openc2": {
+            "response": {
+                "status": 200,
+                "status_text": "OK - the Command has succeeded.",
+                "results": {
+                    "profiles": [
+                        "slpf",
+                        "x-acme"
+                    ]
+                }
+            }
+        }
+    }
+}
+```
+
