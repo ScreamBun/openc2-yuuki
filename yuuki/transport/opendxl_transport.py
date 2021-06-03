@@ -8,7 +8,7 @@ from dxlclient.callbacks import EventCallback, RequestCallback
 from dxlclient.message import Event, Message, Request, Response
 from dxlclient.service import ServiceRegistrationInfo
 
-from yuuki.transport.oc2_base import Consumer
+from yuuki.transport.consumer import Consumer
 
 
 @dataclass

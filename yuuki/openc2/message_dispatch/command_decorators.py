@@ -13,7 +13,7 @@ def oc2_pair(actuator_nsid, action_name, target_name):
         ...
         @oc2_pair('slpf', 'deny', 'ipv4_connection')
         def some_function(oc2_cmd):
-            return OC2Rsp()
+            return OC2RspFields()
     """
 
     def _register(method):
@@ -42,7 +42,7 @@ def oc2_no_matching_pair(method):
         ...
         @oc2_no_matching_pair
         def some_function(oc2_cmd):
-            print('we dont support that action-target pair!')
+            print("we don't support that action-target pair!")
     """
 
     method.oc2_no_matching_pair = True
@@ -64,7 +64,7 @@ def oc2_no_matching_actuator(method):
         ...
         @oc2_no_matching_actuator
         def some_function(oc2_cmd):
-            print('we dont support that actuator!')
+            print("we don't support that actuator!")
     """
     method.oc2_no_matching_nsid = True
     return method

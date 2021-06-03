@@ -2,10 +2,11 @@
 Base class for OpenC2 Command Handlers that you create.
 """
 
-from functools import partial
 import logging
+from functools import partial
+
 from .command_decorators import _OC2PairMeta
-from ..oc2_types import OC2Cmd, OC2Rsp, OC2Msg, StatusCode
+from ..oc2_types import OC2Msg, StatusCode, OC2CmdFields, OC2RspFields
 
 
 class OpenC2CmdDispatchBase(metaclass=_OC2PairMeta):
@@ -112,7 +113,7 @@ class OpenC2CmdDispatchBase(metaclass=_OC2PairMeta):
         my_callable = partial(func, oc2_cmd)
         return my_callable
 
-    def query_features(self, oc2_cmd: OC2Cmd):
+    def query_features(self, oc2_cmd: OC2CmdFields):
         """
         https://docs.oasis-open.org/openc2/oc2ls/v1.0/cs02/oc2ls-v1.0-cs02.html#41-implementation-of-query-features-command
         """
@@ -122,18 +123,17 @@ class OpenC2CmdDispatchBase(metaclass=_OC2PairMeta):
         args_other = None
 
         if oc2_cmd.args is not None:
-            for key, value in oc2_cmd.args.items():
-                if key == 'response_requested':
+            for field, value in oc2_cmd.args:
+                if field == 'response_requested':
                     args_response_requested = value
                 else:
-                    args_other = str(args_other) + str(key) + str(value)
+                    args_other = str(args_other) + str(field) + str(value)
 
         if args_response_requested is not None and args_response_requested != 'complete':
-            return OC2Rsp(status=StatusCode.BAD_REQUEST,
-                          status_text='Only arg response_requested=complete allowed')
+            return OC2RspFields(status=StatusCode.BAD_REQUEST,
+                                status_text='Only arg response_requested=complete allowed')
         if args_other is not None:
-            return OC2Rsp(status=StatusCode.BAD_REQUEST,
-                          status_text='Only arg response_requested allowed')
+            return OC2RspFields(status=StatusCode.BAD_REQUEST, status_text='Only arg response_requested allowed')
 
         # Target Specifiers
 
@@ -149,11 +149,10 @@ class OpenC2CmdDispatchBase(metaclass=_OC2PairMeta):
             elif item == 'pairs':
                 retval_results['pairs'] = self.pairs
             else:
-                return OC2Rsp(status=StatusCode.BAD_REQUEST,
-                              status_text='features field only allows versions, profiles, rate_limit, and pairs')
+                return OC2RspFields(status=StatusCode.BAD_REQUEST,
+                                    status_text='features field only allows versions, profiles, rate_limit, and pairs')
 
         if len(retval_results) > 0:
-            return OC2Rsp(status=StatusCode.OK,
-                          results=retval_results)
+            return OC2RspFields(status=StatusCode.OK, results=retval_results)
         else:
-            return OC2Rsp(status=StatusCode.OK)
+            return OC2RspFields(status=StatusCode.OK)

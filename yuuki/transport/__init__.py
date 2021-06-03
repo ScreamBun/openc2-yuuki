@@ -1,8 +1,8 @@
-from .oc2_http import (
+from .http_transport import (
     Http,
     HttpConfig
 )
-from .oc2_mqtt import (
+from .mqtt_transport import (
     Mqtt,
     MqttConfig,
     Authorization,

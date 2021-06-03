@@ -8,8 +8,10 @@ from .message_dispatch import (
 
 from .oc2_types import (
     OC2Cmd,
+    OC2CmdFields,
     StatusCode,
     OC2Rsp,
+    OC2RspFields,
     OC2Msg
 )
 

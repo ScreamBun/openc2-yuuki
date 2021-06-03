@@ -1,8 +1,7 @@
-"""Basic OpenC2 Types: Command, Response, etc"""
-
-from dataclasses import dataclass, field, asdict
 from enum import IntEnum
-from typing import Optional, Dict, Mapping, Any, Iterable, Union
+from typing import Optional, Union, List, Dict, Any, Literal
+
+from pydantic import BaseModel, Extra, Field, validator, root_validator, ValidationError
 
 
 class StatusCode(IntEnum):
@@ -16,6 +15,7 @@ class StatusCode(IntEnum):
     NOT_IMPLEMENTED = 501
     SERVICE_UNAVAILABLE = 503
 
+    @property
     def text(self):
         mapping = {
             102: 'Processing - an interim OC2Rsp used to inform the Producer that the Consumer has accepted the '
@@ -39,158 +39,89 @@ class StatusCode(IntEnum):
         return str(self.value)
 
 
-# ---Notification---
-
-@dataclass
-class OC2Nfy:
+class OC2NfyFields(BaseModel, extra=Extra.forbid, allow_mutation=False):
     pass
 
 
-@dataclass
-class OC2NfyParent:
-    notification: field(default_factory=OC2Nfy)
-
-    @classmethod
-    def init_from_dict(cls, a_dict):
-        pass
+class OC2Nfy(BaseModel, extra=Extra.forbid, allow_mutation=False):
+    notification: OC2NfyFields
 
 
-# ---Response---
+class OC2RspFields(BaseModel, extra=Extra.forbid, allow_mutation=False):
+    status: StatusCode
+    status_text: Optional[str]
+    results: Optional[Dict[str, Any]]
 
-@dataclass
-class OC2Rsp:
-    status: StatusCode = StatusCode.NOT_IMPLEMENTED
-    status_text: Optional[str] = None
-    results: Optional[Dict[str, str]] = None
-
-    def __post_init__(self):
-        if self.status_text is None:
-            self.status_text = self.status.text()
-
-    @classmethod
-    def init_from_dict(cls, a_dict):
-        retval = cls()
-        if isinstance(a_dict['status'], (int, str)):
-            retval.status = StatusCode(int(a_dict['status']))
-        for attr_name in ['status_text', 'results']:
-            if attr_name in a_dict.keys():
-                setattr(retval, attr_name, a_dict[attr_name])
-        return retval
+    @validator('status_text', always=True)
+    def set_status_text(cls, status_text, values):
+        return status_text or values['status'].text
 
 
-@dataclass
-class OC2RspParent:
-    response: OC2Rsp = field(default_factory=OC2Rsp)
-
-    @classmethod
-    def init_from_dict(cls, a_dict):
-        retval = cls()
-        if 'response' in a_dict.keys():
-            retval.response = OC2Cmd.init_from_dict(a_dict['response'])
-        return retval
+class OC2Rsp(BaseModel, extra=Extra.forbid, allow_mutation=False):
+    response: OC2RspFields
 
 
-# ---Command---
+class OC2CmdArgs(BaseModel, extra=Extra.allow, allow_mutation=False):
+    start_time: Optional[int]
+    stop_time: Optional[int]
+    duration: Optional[int]
+    response_requested: Optional[Literal['none', 'ack', 'status', 'complete']]
 
-@dataclass
-class OC2Cmd:
-    action: str = 'deny'
-    target: Mapping[str, Any] = field(default_factory=lambda: {'ipv4_connection': {}})
-    args: Optional[Mapping[str, Mapping[Any, Any]]] = None
-    actuator: Optional[Mapping[str, Mapping[Any, Any]]] = None
-    command_id: Optional[str] = None
+    @root_validator
+    def check_arg_length(cls, args):
+        for arg in args:
+            if args[arg] is not None:
+                return args
+        raise ValueError('Args must have at least one argument if specified')
+
+    @root_validator
+    def check_time_args(cls, args):
+        if all(args[time_arg] is not None for time_arg in ('start_time', 'stop_time', 'duration')):
+            raise ValueError('Can have at most two of [start_time, stop_time, duration]')
+        return args
+
+    @root_validator
+    def check_extra_args(cls, args):
+        for arg in args:
+            if arg not in ('start_time', 'stop_time', 'duration', 'response_requested'):
+                if type(args[arg]) is not dict:
+                    raise ValueError('Value of extra arguments must be a dictionary')
+        return args
+
+
+class OC2CmdFields(BaseModel, extra=Extra.forbid, allow_mutation=False):
+    action: str
+    target: Dict[str, Any]
+    args: Optional[OC2CmdArgs]
+    actuator: Optional[Dict[str, Dict[Any, Any]]]
+    command_id: Optional[str]
+
+    @validator('target')
+    def validate_target_length(cls, target: Dict):
+        if len(target) != 1:
+            raise ValueError('Target dictionary length must be one')
+        return target
 
     @property
     def target_name(self):
-        retval, = self.target.keys()
-        return retval
-
-    @property
-    def actuator_name(self):
-        if self.actuator is not None:
-            retval, = self.actuator.keys()
-            return retval
-        return None
-
-    @classmethod
-    def init_from_dict(cls, a_dict):
-        retval = cls()
-        retval.action = a_dict['action']
-        retval.target = a_dict['target']
-
-        for attr_name in ['args', 'actuator', 'command_id']:
-            if attr_name in a_dict.keys():
-                setattr(retval, attr_name, a_dict[attr_name])
-        return retval
+        return next(iter(self.target))
 
 
-@dataclass
-class OC2CmdParent:
-    request: OC2Cmd = field(default_factory=OC2Cmd)
-
-    @classmethod
-    def init_from_dict(cls, a_dict):
-        retval = cls()
-        if 'request' in a_dict.keys():
-            retval.request = OC2Cmd.init_from_dict(a_dict['request'])
-        return retval
+class OC2Cmd(BaseModel, extra=Extra.forbid, allow_mutation=False):
+    request: OC2CmdFields
 
 
-# ---Message---
-
-@dataclass
-class OC2Headers:
-    request_id: Optional[str] = None
-    created: Optional[int] = None
-    from_: Optional[str] = None
-    to: Optional[Iterable[str]] = None
-
-    @classmethod
-    def init_from_dict(cls, a_dict):
-        retval = cls()
-        for attr_name in ['request_id', 'created', 'to']:
-            if attr_name in a_dict.keys():
-                setattr(retval, attr_name, a_dict[attr_name])
-        if 'from' in a_dict.keys():
-            setattr(retval, 'from_', a_dict['from'])
-        return retval
+class OC2Headers(BaseModel, extra=Extra.forbid, allow_mutation=False, allow_population_by_field_name=True):
+    request_id: Optional[str]
+    created: Optional[int]
+    from_: Optional[str] = Field(alias='from')
+    to: Optional[Union[str, List[str]]]
 
 
-@dataclass
-class OC2Body:
-    openc2: Union[OC2CmdParent, OC2RspParent, OC2NfyParent] = field(default_factory=OC2CmdParent)
-
-    @classmethod
-    def init_from_dict(cls, a_dict):
-        retval = cls()
-        my_root = a_dict['openc2']
-        if 'request' in my_root.keys():
-            retval.openc2 = OC2CmdParent.init_from_dict(my_root)
-        elif 'response' in my_root.keys():
-            retval.openc2 = OC2RspParent.init_from_dict(my_root)
-        elif 'notification' in my_root.keys():
-            # retval.openc2 = OC2NfyParent.init_from_dict(my_root)
-            pass
-        return retval
+class OC2Body(BaseModel, extra=Extra.forbid, allow_mutation=False):
+    openc2: Union[OC2Cmd, OC2Rsp, OC2Nfy]
 
 
-@dataclass
-class OC2Msg:
-    headers: OC2Headers = field(default_factory=OC2Headers)
-    body: OC2Body = field(default_factory=OC2Body)
-
-    @classmethod
-    def init_from_dict(cls, a_dict):
-        retval = cls()
-        if 'headers' in a_dict.keys():
-            retval.headers = OC2Headers.init_from_dict(a_dict['headers'])
-        if 'body' in a_dict.keys():
-            retval.body = OC2Body.init_from_dict(a_dict['body'])
-        return retval
-
-    def to_dict(self):
-        retval = asdict(self)
-        if 'headers' in retval.keys():
-            if 'from_' in retval['headers'].keys():
-                retval['headers']['from'] = retval['headers'].pop('from_')
-        return retval
+class OC2Msg(BaseModel, extra=Extra.forbid, allow_mutation=False):
+    headers: OC2Headers
+    body: OC2Body
