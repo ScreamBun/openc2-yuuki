@@ -7,6 +7,7 @@ a Consumer with it and our chosen Transport(HTTP) and Serialization(Json).
 To keep the file short and sweet, we use wildcard * imports and no comments.
 See the mqtt_example.py for details.
 """
+
 from yuuki import Http, HttpConfig
 from command_handler import CommandHandler
 

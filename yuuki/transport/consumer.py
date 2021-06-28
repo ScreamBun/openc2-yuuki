@@ -24,7 +24,8 @@ class Consumer:
             data_dict = deserialize(raw_data, encode)
         except KeyError:
             return self.make_response_msg(OC2RspFields(status=StatusCode.BAD_REQUEST,
-                                                       status_text='Invalid serialization protocol'))
+                                                       status_text='Invalid serialization protocol'),
+                                          encode='json')
         except (ValueError, TypeError) as e:
             return self.make_response_msg(OC2RspFields(status=StatusCode.BAD_REQUEST,
                                                        status_text=f'Deserialization to Python Dict failed: {e}'),
@@ -71,7 +72,7 @@ class Consumer:
             return self.make_response_msg(oc2_body, oc2_msg_in.headers, encode)
 
     @staticmethod
-    def make_response_msg(oc2_body, headers=OC2Headers(), encode='json'):
+    def make_response_msg(oc2_body, headers=OC2Headers(), encode=None):
         oc2_rsp = OC2Msg(headers=OC2Headers(request_id=headers.request_id,
                                             from_='yuuki', to=headers.from_,
                                             created=round(time() * 1000)),

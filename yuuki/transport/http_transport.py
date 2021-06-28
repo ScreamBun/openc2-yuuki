@@ -17,7 +17,7 @@ my_openc2_consumer.start()
 from dataclasses import dataclass
 from typing import Optional
 
-import werkzeug
+from werkzeug.http import parse_options_header
 from quart import (
     Quart,
     request,
@@ -82,7 +82,7 @@ class Http(Consumer):
     def verify_headers(headers):
         if 'Host' and 'Content-type' in headers:
             try:
-                encode = werkzeug.http.parse_options_header(headers['Content-type'])[0].split('/')[1].split('+')[1]
+                encode = parse_options_header(headers['Content-type'])[0].split('/')[1].split('+')[1]
             except IndexError:
                 return None
             if headers['Content-type'] == f"application/openc2-cmd+{encode};version=1.0":

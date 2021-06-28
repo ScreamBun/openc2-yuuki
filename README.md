@@ -375,6 +375,7 @@ with DxlClient(config) as client:
     event.other_fields['contentType'] = 'application/openc2'
     event.other_fields['msgType'] = 'req'
     client.send_event(event)
+    time.sleep(1)
 
 ```
 
