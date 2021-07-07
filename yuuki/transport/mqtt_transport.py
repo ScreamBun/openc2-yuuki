@@ -22,7 +22,7 @@ from dataclasses import dataclass, field
 from typing import List, Optional
 from .consumer import Consumer
 
-from ..openc2.oc2_types import StatusCode, OC2Rsp, OC2Headers, OC2RspFields
+from ..openc2.oc2_types import StatusCode, OC2Headers, OC2RspFields
 
 import paho.mqtt.client as mqtt
 from paho.mqtt.properties import Properties
@@ -128,9 +128,8 @@ class Mqtt(Consumer):
         if encode:
             oc2_msg = await self.get_response(msg.payload, encode)
         else:
-            oc2_body = OC2Rsp(response=OC2RspFields(status=StatusCode.BAD_REQUEST,
-                                                    status_text='Malformed MQTT Properties'))
-            oc2_msg = self.make_response_msg(oc2_body, OC2Headers(), encode)
+            oc2_body = OC2RspFields(status=StatusCode.BAD_REQUEST, status_text='Malformed MQTT Properties')
+            oc2_msg = self.make_response_msg(oc2_body, OC2Headers(), 'json')
         try:
             response_queue.put_nowait((oc2_msg, encode))
         except Exception as e:
