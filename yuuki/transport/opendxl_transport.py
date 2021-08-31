@@ -1,4 +1,3 @@
-import asyncio
 from dataclasses import dataclass
 
 from dxlclient.client import DxlClient
@@ -29,20 +28,21 @@ class OC2EventCallback(EventCallback):
         self.get_response = get_response
 
     def on_event(self, event):
-        asyncio.set_event_loop(asyncio.new_event_loop())
         encode = event.other_fields.get('encoding', 'json')
         if (event.other_fields.get('msgType') != 'req' or
                 event.other_fields.get('contentType') != 'application/openc2'):
             oc2_body = OC2RspFields(status=StatusCode.BAD_REQUEST, status_text='Malformed Event Fields')
             oc2_msg = Consumer.make_response_msg(oc2_body, OC2Headers(), encode)
         else:
-            oc2_msg = asyncio.get_event_loop().run_until_complete(self.get_response(event.payload, encode))
-        event = Event(self.config.EVENT_RESPONSE_TOPIC)
-        event.payload = oc2_msg
-        event.other_fields['encoding'] = encode
-        event.other_fields['contentType'] = 'application/openc2'
-        event.other_fields['msgType'] = 'rsp'
-        self.client.send_event(event)
+            oc2_msg = self.get_response(event.payload, encode)
+
+        if oc2_msg is not None:
+            event = Event(self.config.EVENT_RESPONSE_TOPIC)
+            event.payload = oc2_msg
+            event.other_fields['encoding'] = encode
+            event.other_fields['contentType'] = 'application/openc2'
+            event.other_fields['msgType'] = 'rsp'
+            self.client.send_event(event)
 
 
 class OC2RequestCallback(RequestCallback):
@@ -52,19 +52,21 @@ class OC2RequestCallback(RequestCallback):
         self.get_response = get_response
 
     def on_request(self, request):
-        asyncio.set_event_loop(asyncio.new_event_loop())
         encode = request.other_fields.get('encoding', 'json')
         if (request.other_fields.get('msgType') != 'req' or
                 request.other_fields.get('contentType') != 'application/openc2'):
             oc2_body = OC2RspFields(status=StatusCode.BAD_REQUEST, status_text='Malformed Request Fields')
             oc2_msg = Consumer.make_response_msg(oc2_body, OC2Headers(), encode)
         else:
-            oc2_msg = asyncio.get_event_loop().run_until_complete(self.get_response(request.payload, encode))
+            oc2_msg = self.get_response(request.payload, encode)
         response = Response(request)
-        response.payload = oc2_msg
-        response.other_fields['encoding'] = encode
-        response.other_fields['contentType'] = 'application/openc2'
-        response.other_fields['msgType'] = 'rsp'
+        if oc2_msg is not None:
+            response.payload = oc2_msg
+            response.other_fields['encoding'] = encode
+            response.other_fields['contentType'] = 'application/openc2'
+            response.other_fields['msgType'] = 'rsp'
+        else:
+            response.payload = ''
         self.client.send_response(response)
 
 

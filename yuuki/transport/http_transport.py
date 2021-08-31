@@ -56,17 +56,21 @@ class Http(Consumer):
     def setup(self, app):
         @app.route('/', methods=['POST'])
         async def receive():
-            encode = self.verify_headers(request.headers)
-            if encode:
-                raw_data = await request.get_data()
-                oc2_msg = await self.get_response(raw_data, encode)
-            else:
+            try:
+                encode = self.verify_headers(request.headers)
+            except ValueError:
                 oc2_body = OC2RspFields(status=StatusCode.BAD_REQUEST, status_text='Malformed HTTP Request')
                 oc2_msg = self.make_response_msg(oc2_body, OC2Headers(), 'json')
+            else:
+                raw_data = await request.get_data()
+                oc2_msg = self.get_response(raw_data, encode)
 
-            http_response = await make_response(oc2_msg)
-            http_response.content_type = 'application/openc2-rsp+json;version=1.0'
-            return http_response
+            if oc2_msg is not None:
+                http_response = await make_response(oc2_msg)
+                http_response.content_type = 'application/openc2-rsp+json;version=1.0'
+                return http_response
+            else:
+                return '', 204
 
     def start(self):
         if self.transport_config.use_tls:
@@ -82,8 +86,8 @@ class Http(Consumer):
         if 'Host' and 'Content-type' in headers:
             try:
                 encode = parse_options_header(headers['Content-type'])[0].split('/')[1].split('+')[1]
-            except IndexError:
-                return None
+            except IndexError as error:
+                raise ValueError('Invalid OpenC2 HTTP Headers') from error
             if headers['Content-type'] == f"application/openc2-cmd+{encode};version=1.0":
                 return encode
-        return None
+        raise ValueError('Invalid OpenC2 HTTP Headers')

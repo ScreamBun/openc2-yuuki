@@ -126,12 +126,13 @@ class Mqtt(Consumer):
 
         encode = self.verify_properties(msg.properties)
         if encode:
-            oc2_msg = await self.get_response(msg.payload, encode)
+            oc2_msg = self.get_response(msg.payload, encode)
         else:
             oc2_body = OC2RspFields(status=StatusCode.BAD_REQUEST, status_text='Malformed MQTT Properties')
             oc2_msg = self.make_response_msg(oc2_body, OC2Headers(), 'json')
         try:
-            response_queue.put_nowait((oc2_msg, encode))
+            if oc2_msg is not None:
+                response_queue.put_nowait((oc2_msg, encode))
         except Exception as e:
             logging.error(f'Message Handling Failed {e}')
 
@@ -267,7 +268,8 @@ class _MqttClient:
                 logging.info('Will use TLS')
                 self._client.tls_set(ca_certs=self.ca_certs, certfile=self.certfile, keyfile=self.keyfile)
             logging.info(f'Connecting --> {self.host}:{self.port} --> keep_alive:{self.keep_alive} ...')
-            self._client.connect(self.host, self.port, keepalive=self.keep_alive, properties=None)
+            self._client.connect(self.host, self.port, keepalive=self.keep_alive,
+                                 clean_start=mqtt.MQTT_CLEAN_START_FIRST_ONLY, properties=None)
         except ConnectionRefusedError:
             logging.error(f'BrokerConfig at {self.host}:{self.port} refused connection')
             raise

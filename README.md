@@ -292,6 +292,11 @@ Success! The Yuuki Consumer successfully received an OpenC2 Command, then publis
 
 # Example: OpenDXL
 
+| :warning:        | *Support for OpenDXL is experimental. This code may change when the transfer specification for OpenDXL is published.*|
+|------------------|:---------------------------------------------------------------------------------------------------------------------|
+
+
+
 This example tests sending OpenC2 commands using both the Event and Request/Response messaging capabilities of OpenDXL.
 
 To configure Yuuki to use OpenDXL, set `CONFIG_FILE` in `oc2_opendxl.py` to the path where your `dxlclient.config` file is located.

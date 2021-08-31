@@ -1,7 +1,7 @@
-import asyncio
 import logging
 from time import time
 from pprint import pformat
+from concurrent.futures import ThreadPoolExecutor
 
 from pydantic import ValidationError
 
@@ -15,11 +15,12 @@ class Consumer:
     def __init__(self, cmd_handler, transport_config):
         self.cmd_handler = cmd_handler
         self.transport_config = transport_config
+        self.executor = ThreadPoolExecutor()
 
     def start(self):
         raise NotImplementedError
 
-    async def get_response(self, raw_data, encode):
+    def get_response(self, raw_data, encode):
         try:
             data_dict = deserialize(raw_data, encode)
         except KeyError:
@@ -47,19 +48,32 @@ class Consumer:
             oc2_msg_in = OC2Msg(**data_dict)
         except ValidationError as e:
             return self.make_response_msg(OC2RspFields(status=StatusCode.BAD_REQUEST,
-                                                       status_text=f'Malformed OpenC2 message: {e}'),
+                                                       status_text='Malformed OpenC2 message'),
                                           encode=encode)
 
         try:
             actuator_callable = self.cmd_handler.get_actuator_callable(oc2_msg_in)
         except NotImplementedError as e:
             return self.make_response_msg(OC2RspFields(status=StatusCode.BAD_REQUEST,
-                                                       status_text=f'Message Dispatch failed: {e}'),
+                                                       status_text='No matching actuator found'),
                                           headers=oc2_msg_in.headers,
                                           encode=encode)
 
+        if oc2_msg_in.body.openc2.request.args and oc2_msg_in.body.openc2.request.args.response_requested:
+            response_requested = oc2_msg_in.body.openc2.request.args.response_requested
+            if response_requested == 'none':
+                self.executor.submit(actuator_callable)
+                return None
+            elif response_requested == 'ack':
+                self.executor.submit(actuator_callable)
+                return self.make_response_msg(OC2RspFields(status=StatusCode.PROCESSING), oc2_msg_in.headers, encode)
+            elif response_requested == 'status':
+                pass
+            elif response_requested == 'complete':
+                pass
+
         try:
-            oc2_body = await asyncio.get_running_loop().run_in_executor(None, actuator_callable)
+            oc2_body = actuator_callable()
         except Exception as e:
             return self.make_response_msg(OC2RspFields(status=StatusCode.BAD_REQUEST,
                                                        status_text=f'Actuator failed: {e}'),

@@ -118,41 +118,28 @@ class OpenC2CmdDispatchBase(metaclass=_OC2PairMeta):
         https://docs.oasis-open.org/openc2/oc2ls/v1.0/cs02/oc2ls-v1.0-cs02.html#41-implementation-of-query-features-command
         """
         logging.debug('Using base implementation of query-features')
-        # Arguments
-        args_response_requested = None
-        args_other = None
 
         if oc2_cmd.args is not None:
-            for field, value in oc2_cmd.args:
-                if field == 'response_requested':
-                    args_response_requested = value
-                else:
-                    args_other = str(args_other) + str(field) + str(value)
+            if oc2_cmd.args.dict(exclude_unset=True).keys() != {'response_requested'}:
+                return OC2RspFields(status=StatusCode.BAD_REQUEST, status_text='Only arg response_requested allowed')
 
-        if args_response_requested is not None and args_response_requested != 'complete':
-            return OC2RspFields(status=StatusCode.BAD_REQUEST,
-                                status_text='Only arg response_requested=complete allowed')
-        if args_other is not None:
-            return OC2RspFields(status=StatusCode.BAD_REQUEST, status_text='Only arg response_requested allowed')
-
-        # Target Specifiers
-
-        retval_results = {}
-
-        for item in oc2_cmd.target['features']:
-            if item == 'versions':
-                retval_results['versions'] = self.versions
-            elif item == 'profiles':
-                retval_results['profiles'] = self.profiles
-            elif item == 'rate_limit':
-                retval_results['rate_limit'] = self.rate_limit
-            elif item == 'pairs':
-                retval_results['pairs'] = self.pairs
-            else:
+            if oc2_cmd.args.response_requested != 'complete':
                 return OC2RspFields(status=StatusCode.BAD_REQUEST,
-                                    status_text='features field only allows versions, profiles, rate_limit, and pairs')
+                                    status_text='Only arg response_requested=complete allowed')
 
-        if len(retval_results) > 0:
-            return OC2RspFields(status=StatusCode.OK, results=retval_results)
+        target_specifiers = {'versions', 'profiles', 'pairs', 'rate_limit'}
+        features: list[str] = oc2_cmd.target['features']
+
+        if not set(features).issubset(target_specifiers):
+            return OC2RspFields(status=StatusCode.BAD_REQUEST,
+                                status_text='features field only allows versions, profiles, rate_limit, and pairs')
+
+        results = {}
+        for target_specifier in target_specifiers:
+            if target_specifier in features:
+                results[target_specifier] = getattr(self, target_specifier)
+
+        if len(results) > 0:
+            return OC2RspFields(status=StatusCode.OK, results=results)
         else:
             return OC2RspFields(status=StatusCode.OK)
