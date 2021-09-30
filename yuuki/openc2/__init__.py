@@ -6,12 +6,12 @@ from .message_dispatch import (
     oc2_pair
 )
 
-from .oc2_types import (
-    OC2Cmd,
-    OC2CmdFields,
+from .openc2_types import (
+    OpenC2Cmd,
+    OpenC2CmdFields,
     StatusCode,
-    OC2Rsp,
-    OC2RspFields,
-    OC2Msg
+    OpenC2Rsp,
+    OpenC2RspFields,
+    OpenC2Msg
 )
 

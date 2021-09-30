@@ -6,8 +6,8 @@ from dxlclient.callbacks import EventCallback, RequestCallback
 from dxlclient.message import Event, Message, Request, Response
 from dxlclient.service import ServiceRegistrationInfo
 
-from yuuki import OC2RspFields, StatusCode
-from yuuki.openc2.oc2_types import OC2Headers
+from yuuki import OpenC2RspFields, StatusCode
+from yuuki.openc2.openc2_types import OpenC2Headers
 from yuuki.transport.consumer import Consumer
 
 
@@ -31,14 +31,14 @@ class OC2EventCallback(EventCallback):
         encode = event.other_fields.get('encoding', 'json')
         if (event.other_fields.get('msgType') != 'req' or
                 event.other_fields.get('contentType') != 'application/openc2'):
-            oc2_body = OC2RspFields(status=StatusCode.BAD_REQUEST, status_text='Malformed Event Fields')
-            oc2_msg = Consumer.make_response_msg(oc2_body, OC2Headers(), encode)
+            oc2_body = OpenC2RspFields(status=StatusCode.BAD_REQUEST, status_text='Malformed Event Fields')
+            response = Consumer.make_response_msg(oc2_body, OpenC2Headers(), encode)
         else:
-            oc2_msg = self.get_response(event.payload, encode)
+            response = self.get_response(event.payload, encode)
 
-        if oc2_msg is not None:
+        if response is not None:
             event = Event(self.config.EVENT_RESPONSE_TOPIC)
-            event.payload = oc2_msg
+            event.payload = response
             event.other_fields['encoding'] = encode
             event.other_fields['contentType'] = 'application/openc2'
             event.other_fields['msgType'] = 'rsp'
@@ -55,19 +55,19 @@ class OC2RequestCallback(RequestCallback):
         encode = request.other_fields.get('encoding', 'json')
         if (request.other_fields.get('msgType') != 'req' or
                 request.other_fields.get('contentType') != 'application/openc2'):
-            oc2_body = OC2RspFields(status=StatusCode.BAD_REQUEST, status_text='Malformed Request Fields')
-            oc2_msg = Consumer.make_response_msg(oc2_body, OC2Headers(), encode)
+            oc2_body = OpenC2RspFields(status=StatusCode.BAD_REQUEST, status_text='Malformed Request Fields')
+            openc2_response = Consumer.make_response_msg(oc2_body, OpenC2Headers(), encode)
         else:
-            oc2_msg = self.get_response(request.payload, encode)
-        response = Response(request)
-        if oc2_msg is not None:
-            response.payload = oc2_msg
-            response.other_fields['encoding'] = encode
-            response.other_fields['contentType'] = 'application/openc2'
-            response.other_fields['msgType'] = 'rsp'
+            openc2_response = self.get_response(request.payload, encode)
+        opendxl_response = Response(request)
+        if openc2_response is not None:
+            opendxl_response.payload = openc2_response
+            opendxl_response.other_fields['encoding'] = encode
+            opendxl_response.other_fields['contentType'] = 'application/openc2'
+            opendxl_response.other_fields['msgType'] = 'rsp'
         else:
-            response.payload = ''
-        self.client.send_response(response)
+            opendxl_response.payload = ''
+        self.client.send_response(opendxl_response)
 
 
 class OpenDxl(Consumer):

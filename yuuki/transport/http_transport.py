@@ -26,7 +26,7 @@ from quart import (
 
 from .consumer import Consumer
 
-from ..openc2.oc2_types import StatusCode, OC2Headers, OC2RspFields
+from ..openc2.openc2_types import StatusCode, OpenC2Headers, OpenC2RspFields
 
 
 @dataclass
@@ -59,15 +59,16 @@ class Http(Consumer):
             try:
                 encode = self.verify_headers(request.headers)
             except ValueError:
-                oc2_body = OC2RspFields(status=StatusCode.BAD_REQUEST, status_text='Malformed HTTP Request')
-                oc2_msg = self.make_response_msg(oc2_body, OC2Headers(), 'json')
+                encode = 'json'
+                oc2_body = OpenC2RspFields(status=StatusCode.BAD_REQUEST, status_text='Malformed HTTP Request')
+                response = self.make_response_msg(oc2_body, OpenC2Headers(), encode)
             else:
                 raw_data = await request.get_data()
-                oc2_msg = self.get_response(raw_data, encode)
+                response = self.get_response(raw_data, encode)
 
-            if oc2_msg is not None:
-                http_response = await make_response(oc2_msg)
-                http_response.content_type = 'application/openc2-rsp+json;version=1.0'
+            if response is not None:
+                http_response = await make_response(response)
+                http_response.content_type = f'application/openc2-rsp+{encode};version=1.0'
                 return http_response
             else:
                 return '', 204

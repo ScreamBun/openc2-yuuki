@@ -13,7 +13,7 @@ def oc2_pair(actuator_nsid, action_name, target_name):
         ...
         @oc2_pair('slpf', 'deny', 'ipv4_connection')
         def some_function(oc2_cmd):
-            return OC2RspFields()
+            return OpenC2RspFields()
     """
 
     def _register(method):

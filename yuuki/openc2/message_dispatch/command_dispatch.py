@@ -6,7 +6,7 @@ import logging
 from functools import partial
 
 from .command_decorators import _OC2PairMeta
-from ..oc2_types import OC2Msg, StatusCode, OC2CmdFields, OC2RspFields
+from ..openc2_types import OpenC2Msg, StatusCode, OpenC2CmdFields, OpenC2RspFields
 
 
 class OpenC2CmdDispatchBase(metaclass=_OC2PairMeta):
@@ -16,7 +16,7 @@ class OpenC2CmdDispatchBase(metaclass=_OC2PairMeta):
     with the decorators in command_util.py.
 
     validator is any callable that takes a Python dictionary
-    of a deserialized command that returns an OC2Cmd Object.
+    of a deserialized command that returns an OpenC2Cmd Object.
 
     Comes with a built-in handler for query-features you can call.
 
@@ -64,7 +64,7 @@ class OpenC2CmdDispatchBase(metaclass=_OC2PairMeta):
                 pairs[action] = [target]
         return pairs
 
-    def get_actuator_callable(self, oc2_msg: OC2Msg):
+    def get_actuator_callable(self, oc2_msg: OpenC2Msg):
 
         logging.debug('Validating...')
         logging.info(f'oc2_msg:\n{oc2_msg}')
@@ -113,7 +113,7 @@ class OpenC2CmdDispatchBase(metaclass=_OC2PairMeta):
         my_callable = partial(func, oc2_cmd)
         return my_callable
 
-    def query_features(self, oc2_cmd: OC2CmdFields):
+    def query_features(self, oc2_cmd: OpenC2CmdFields):
         """
         https://docs.oasis-open.org/openc2/oc2ls/v1.0/cs02/oc2ls-v1.0-cs02.html#41-implementation-of-query-features-command
         """
@@ -121,18 +121,18 @@ class OpenC2CmdDispatchBase(metaclass=_OC2PairMeta):
 
         if oc2_cmd.args is not None:
             if oc2_cmd.args.dict(exclude_unset=True).keys() != {'response_requested'}:
-                return OC2RspFields(status=StatusCode.BAD_REQUEST, status_text='Only arg response_requested allowed')
+                return OpenC2RspFields(status=StatusCode.BAD_REQUEST, status_text='Only arg response_requested allowed')
 
             if oc2_cmd.args.response_requested != 'complete':
-                return OC2RspFields(status=StatusCode.BAD_REQUEST,
-                                    status_text='Only arg response_requested=complete allowed')
+                return OpenC2RspFields(status=StatusCode.BAD_REQUEST,
+                                       status_text='Only arg response_requested=complete allowed')
 
         target_specifiers = {'versions', 'profiles', 'pairs', 'rate_limit'}
         features: list[str] = oc2_cmd.target['features']
 
         if not set(features).issubset(target_specifiers):
-            return OC2RspFields(status=StatusCode.BAD_REQUEST,
-                                status_text='features field only allows versions, profiles, rate_limit, and pairs')
+            return OpenC2RspFields(status=StatusCode.BAD_REQUEST,
+                                   status_text='features field only allows versions, profiles, rate_limit, and pairs')
 
         results = {}
         for target_specifier in target_specifiers:
@@ -140,6 +140,6 @@ class OpenC2CmdDispatchBase(metaclass=_OC2PairMeta):
                 results[target_specifier] = getattr(self, target_specifier)
 
         if len(results) > 0:
-            return OC2RspFields(status=StatusCode.OK, results=results)
+            return OpenC2RspFields(status=StatusCode.OK, results=results)
         else:
-            return OC2RspFields(status=StatusCode.OK)
+            return OpenC2RspFields(status=StatusCode.OK)

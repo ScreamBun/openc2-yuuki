@@ -18,7 +18,7 @@ class StatusCode(IntEnum):
     @property
     def text(self):
         mapping = {
-            102: 'Processing - an interim OC2Rsp used to inform the Producer that the Consumer has accepted the '
+            102: 'Processing - an interim OpenC2Rsp used to inform the Producer that the Consumer has accepted the '
                  'Command but has not yet completed it.',
             200: 'OK - the Command has succeeded.',
             400: 'Bad Request - the Consumer cannot process the Command due to something that is perceived to be a '
@@ -39,15 +39,15 @@ class StatusCode(IntEnum):
         return str(self.value)
 
 
-class OC2NfyFields(BaseModel, extra=Extra.forbid, allow_mutation=False):
+class OpenC2NtfFields(BaseModel, extra=Extra.forbid, allow_mutation=False):
     pass
 
 
-class OC2Nfy(BaseModel, extra=Extra.forbid, allow_mutation=False):
-    notification: OC2NfyFields
+class OpenC2Ntf(BaseModel, extra=Extra.forbid, allow_mutation=False):
+    notification: OpenC2NtfFields
 
 
-class OC2RspFields(BaseModel, extra=Extra.forbid, allow_mutation=False):
+class OpenC2RspFields(BaseModel, extra=Extra.forbid, allow_mutation=False):
     status: StatusCode
     status_text: Optional[str]
     results: Optional[Dict[str, Any]]
@@ -57,11 +57,11 @@ class OC2RspFields(BaseModel, extra=Extra.forbid, allow_mutation=False):
         return status_text or values['status'].text
 
 
-class OC2Rsp(BaseModel, extra=Extra.forbid, allow_mutation=False):
-    response: OC2RspFields
+class OpenC2Rsp(BaseModel, extra=Extra.forbid, allow_mutation=False):
+    response: OpenC2RspFields
 
 
-class OC2CmdArgs(BaseModel, extra=Extra.allow, allow_mutation=False):
+class OpenC2CmdArgs(BaseModel, extra=Extra.allow, allow_mutation=False):
     start_time: Optional[int]
     stop_time: Optional[int]
     duration: Optional[int]
@@ -89,10 +89,10 @@ class OC2CmdArgs(BaseModel, extra=Extra.allow, allow_mutation=False):
         return args
 
 
-class OC2CmdFields(BaseModel, extra=Extra.forbid, allow_mutation=False):
+class OpenC2CmdFields(BaseModel, extra=Extra.forbid, allow_mutation=False):
     action: str
     target: Dict[str, Any]
-    args: Optional[OC2CmdArgs]
+    args: Optional[OpenC2CmdArgs]
     actuator: Optional[Dict[str, Dict[Any, Any]]]
     command_id: Optional[str]
 
@@ -107,21 +107,21 @@ class OC2CmdFields(BaseModel, extra=Extra.forbid, allow_mutation=False):
         return next(iter(self.target))
 
 
-class OC2Cmd(BaseModel, extra=Extra.forbid, allow_mutation=False):
-    request: OC2CmdFields
+class OpenC2Cmd(BaseModel, extra=Extra.forbid, allow_mutation=False):
+    request: OpenC2CmdFields
 
 
-class OC2Headers(BaseModel, extra=Extra.forbid, allow_mutation=False, allow_population_by_field_name=True):
+class OpenC2Headers(BaseModel, extra=Extra.forbid, allow_mutation=False, allow_population_by_field_name=True):
     request_id: Optional[str]
     created: Optional[int]
     from_: Optional[str] = Field(alias='from')
     to: Optional[Union[str, List[str]]]
 
 
-class OC2Body(BaseModel, extra=Extra.forbid, allow_mutation=False):
-    openc2: Union[OC2Cmd, OC2Rsp, OC2Nfy]
+class OpenC2Body(BaseModel, extra=Extra.forbid, allow_mutation=False):
+    openc2: Union[OpenC2Cmd, OpenC2Rsp, OpenC2Ntf]
 
 
-class OC2Msg(BaseModel, extra=Extra.forbid, allow_mutation=False):
-    headers: OC2Headers
-    body: OC2Body
+class OpenC2Msg(BaseModel, extra=Extra.forbid, allow_mutation=False):
+    headers: OpenC2Headers
+    body: OpenC2Body
