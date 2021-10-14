@@ -14,4 +14,3 @@ from .openc2_types import (
     OpenC2RspFields,
     OpenC2Msg
 )
-

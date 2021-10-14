@@ -12,8 +12,11 @@ encode = {
 }
 
 
-def deserialize(data, encoding):
-    return decode[encoding](data)
+def deserialize(data, encoding) -> dict:
+    message = decode[encoding](data)
+    if not isinstance(message, dict):
+        raise TypeError
+    return message
 
 
 def serialize(data, encoding):

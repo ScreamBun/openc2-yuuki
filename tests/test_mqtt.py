@@ -32,7 +32,7 @@ def mqtt_client():
     mqtt_client = mqtt.Client(protocol=mqtt.MQTTv5)
     mqtt_client.on_message = on_message
     mqtt_client.connect(host="test.mosquitto.org", port=1883, keepalive=60, clean_start=False)
-    mqtt_client.subscribe(topic="yuuki/oc2/rsp",
+    mqtt_client.subscribe(topic="oc2/rsp",
                           options=SubscribeOptions(qos=1, noLocal=True, retainAsPublished=True, retainHandling=0))
     yield mqtt_client
     mqtt_client.disconnect()
@@ -54,7 +54,7 @@ class TestMQTT:
     def test_query(self, data_format, encode, decode, query_features, expected_response, mqtt_client, oc2_properties):
         global response
         oc2_properties.UserProperty = [("msgType", "req"), ("encoding", data_format)]
-        mqtt_client.publish(topic="yuuki/oc2/cmd", payload=encode(query_features),
+        mqtt_client.publish(topic="oc2/cmd", payload=encode(query_features),
                             qos=1, retain=False, properties=oc2_properties)
         mqtt_client.loop_start()
         while response is None:

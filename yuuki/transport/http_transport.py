@@ -14,30 +14,14 @@ my_openc2_consumer = Consumer(transport=http_transport, ...)
 my_openc2_consumer.start()
 
 """
-from dataclasses import dataclass
-from typing import Optional
 
 from werkzeug.http import parse_options_header
-from quart import (
-    Quart,
-    request,
-    make_response
-)
+from quart import Quart, request, make_response
 
+from .config import HttpConfig
 from .consumer import Consumer
 
 from ..openc2.openc2_types import StatusCode, OpenC2Headers, OpenC2RspFields
-
-
-@dataclass
-class HttpConfig:
-    """Http Configuration to pass to Http Transport init."""
-
-    consumer_socket: str = '127.0.0.1:9001'
-    use_tls: bool = False
-    certfile: Optional[str] = None
-    keyfile: Optional[str] = None
-    ca_certs: Optional[str] = None
 
 
 class Http(Consumer):
@@ -45,13 +29,8 @@ class Http(Consumer):
 
     def __init__(self, cmd_handler, http_config: HttpConfig):
         super().__init__(cmd_handler, http_config)
-        self.app = Quart(__name__)
+        self.app = Quart('yuuki')
         self.setup(self.app)
-        self.host, port = self.transport_config.consumer_socket.split(':')
-        self.port = int(port)
-        if self.transport_config.use_tls:
-            if self.transport_config.certfile is None or self.transport_config.keyfile is None:
-                raise ValueError('TLS requires a keyfile and certfile.')
 
     def setup(self, app):
         @app.route('/', methods=['POST'])
@@ -63,8 +42,7 @@ class Http(Consumer):
                 oc2_body = OpenC2RspFields(status=StatusCode.BAD_REQUEST, status_text='Malformed HTTP Request')
                 response = self.make_response_msg(oc2_body, OpenC2Headers(), encode)
             else:
-                raw_data = await request.get_data()
-                response = self.get_response(raw_data, encode)
+                response = self.get_response(await request.get_data(), encode)
 
             if response is not None:
                 http_response = await make_response(response)
@@ -74,13 +52,13 @@ class Http(Consumer):
                 return '', 204
 
     def start(self):
-        if self.transport_config.use_tls:
-            self.app.run(port=self.port, host=self.host,
-                         certfile=self.transport_config.certfile,
-                         keyfile=self.transport_config.keyfile,
-                         ca_certs=self.transport_config.ca_certs)
+        if self.config.authentication.enable:
+            self.app.run(port=self.config.port, host=self.config.host,
+                         certfile=self.config.authentication.certfile,
+                         keyfile=self.config.authentication.keyfile,
+                         ca_certs=self.config.authentication.ca_certs)
         else:
-            self.app.run(port=self.port, host=self.host)
+            self.app.run(port=self.config.port, host=self.config.host)
 
     @staticmethod
     def verify_headers(headers):

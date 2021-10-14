@@ -69,22 +69,22 @@ class OpenC2CmdArgs(BaseModel, extra=Extra.allow, allow_mutation=False):
 
     @root_validator
     def check_arg_length(cls, args):
-        for arg in args:
-            if args[arg] is not None:
+        for value in args.values():
+            if value is not None:
                 return args
         raise ValueError('Args must have at least one argument if specified')
 
     @root_validator
     def check_time_args(cls, args):
-        if all(args[time_arg] is not None for time_arg in ('start_time', 'stop_time', 'duration')):
+        if all(args.get(time_arg) is not None for time_arg in ('start_time', 'stop_time', 'duration')):
             raise ValueError('Can have at most two of [start_time, stop_time, duration]')
         return args
 
     @root_validator
     def check_extra_args(cls, args):
-        for arg in args:
+        for arg, value in args.items():
             if arg not in ('start_time', 'stop_time', 'duration', 'response_requested'):
-                if type(args[arg]) is not dict:
+                if type(value) is not dict:
                     raise ValueError('Value of extra arguments must be a dictionary')
         return args
 

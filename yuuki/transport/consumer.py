@@ -14,76 +14,68 @@ class Consumer:
 
     def __init__(self, cmd_handler, transport_config):
         self.cmd_handler = cmd_handler
-        self.transport_config = transport_config
+        self.config = transport_config
         self.executor = ThreadPoolExecutor()
+        print(r'''
+        _____.___.            __   .__ 
+        \__  |   |__ __ __ __|  | _|__|
+         /   |   |  |  \  |  \  |/ /  |
+         \____   |  |  /  |  /    <|  |
+         / ______|____/|____/|__|_ \__|
+         \/                       \/   
+        ''')
 
     def start(self):
         raise NotImplementedError
 
     def get_response(self, raw_data, encode):
         try:
-            data_dict = deserialize(raw_data, encode)
+            message = deserialize(raw_data, encode)
         except KeyError:
-            return self.make_response_msg(OpenC2RspFields(status=StatusCode.BAD_REQUEST,
-                                                          status_text='Invalid serialization protocol'),
-                                          encode='json')
+            openc2_rsp = OpenC2RspFields(status=StatusCode.BAD_REQUEST, status_text='Invalid serialization protocol')
+            return self.make_response_msg(openc2_rsp, encode='json')
         except (ValueError, TypeError) as e:
-            return self.make_response_msg(OpenC2RspFields(status=StatusCode.BAD_REQUEST,
-                                                          status_text=f'Deserialization to Python Dict failed: {e}'),
-                                          encode=encode)
+            openc2_rsp = OpenC2RspFields(status=StatusCode.BAD_REQUEST, status_text=f'Deserialization failed: {e}')
+            return self.make_response_msg(openc2_rsp, encode=encode)
 
-        if not isinstance(data_dict, dict):
-            return self.make_response_msg(OpenC2RspFields(status=StatusCode.BAD_REQUEST,
-                                                          status_text='Deserialization to Python Dict failed'),
-                                          encode=encode)
-
-        logging.info(f'Received payload as a Python Dict:\n{pformat(data_dict)}')
-
-        if "headers" not in data_dict.keys() or "body" not in data_dict.keys():
-            return self.make_response_msg(OpenC2RspFields(status=StatusCode.BAD_REQUEST,
-                                                          status_text='OpenC2 message missing headers and/or body.'),
-                                          encode=encode)
+        logging.info(f'Received command:\n{pformat(message)}')
 
         try:
-            oc2_msg_in = OpenC2Msg(**data_dict)
+            openc2_cmd = OpenC2Msg(**message)
         except ValidationError:
-            return self.make_response_msg(OpenC2RspFields(status=StatusCode.BAD_REQUEST,
-                                                          status_text='Malformed OpenC2 message'),
-                                          encode=encode)
+            openc2_rsp = OpenC2RspFields(status=StatusCode.BAD_REQUEST, status_text='Malformed OpenC2 message')
+            return self.make_response_msg(openc2_rsp, encode=encode)
 
         try:
-            actuator_callable = self.cmd_handler.get_actuator_callable(oc2_msg_in)
+            actuator_callable = self.cmd_handler.get_actuator_callable(openc2_cmd)
         except NotImplementedError:
-            return self.make_response_msg(OpenC2RspFields(status=StatusCode.BAD_REQUEST,
-                                                          status_text='No matching actuator found'),
-                                          headers=oc2_msg_in.headers,
-                                          encode=encode)
+            openc2_rsp = OpenC2RspFields(status=StatusCode.BAD_REQUEST, status_text='No matching actuator found')
+            return self.make_response_msg(openc2_rsp, headers=openc2_cmd.headers, encode=encode)
 
-        if oc2_msg_in.body.openc2.request.args and oc2_msg_in.body.openc2.request.args.response_requested:
-            response_requested = oc2_msg_in.body.openc2.request.args.response_requested
+        if openc2_cmd.body.openc2.request.args and openc2_cmd.body.openc2.request.args.response_requested:
+            response_requested = openc2_cmd.body.openc2.request.args.response_requested
             if response_requested == 'none':
                 self.executor.submit(actuator_callable)
                 return None
             elif response_requested == 'ack':
                 self.executor.submit(actuator_callable)
-                return self.make_response_msg(OpenC2RspFields(status=StatusCode.PROCESSING), oc2_msg_in.headers, encode)
+                return self.make_response_msg(OpenC2RspFields(status=StatusCode.PROCESSING), openc2_cmd.headers, encode)
             elif response_requested == 'status':
                 pass
             elif response_requested == 'complete':
                 pass
 
         try:
-            oc2_body = actuator_callable()
+            openc2_rsp = actuator_callable()
         except Exception as e:
-            return self.make_response_msg(OpenC2RspFields(status=StatusCode.BAD_REQUEST,
-                                                          status_text=f'Actuator failed: {e}'),
-                                          encode=encode)
+            openc2_rsp = OpenC2RspFields(status=StatusCode.BAD_REQUEST, status_text=f'Actuator failed: {e}')
+            return self.make_response_msg(openc2_rsp, encode=encode)
 
         try:
-            return self.make_response_msg(oc2_body, oc2_msg_in.headers, encode)
+            return self.make_response_msg(openc2_rsp, openc2_cmd.headers, encode)
         except (ValueError, TypeError) as e:
-            oc2_body = OpenC2RspFields(status=StatusCode.NOT_FOUND, status_text=f'Serialization failed: {e}')
-            return self.make_response_msg(oc2_body, oc2_msg_in.headers, encode)
+            openc2_rsp = OpenC2RspFields(status=StatusCode.NOT_FOUND, status_text=f'Serialization failed: {e}')
+            return self.make_response_msg(openc2_rsp, openc2_cmd.headers, encode)
 
     @staticmethod
     def make_response_msg(oc2_body, headers=OpenC2Headers(), encode=None):

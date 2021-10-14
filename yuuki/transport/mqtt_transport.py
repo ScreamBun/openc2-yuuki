@@ -16,112 +16,38 @@ my_openc2_consumer.start()
 """
 
 import logging
-from dataclasses import dataclass, field
-from typing import List, Optional
 
 import paho.mqtt.client as mqtt
 from paho.mqtt.packettypes import PacketTypes
 from paho.mqtt.properties import Properties
 
+from .config import MqttConfig
 from .consumer import Consumer
 from ..openc2.openc2_types import StatusCode, OpenC2Headers, OpenC2RspFields
 
-
-# ----- Configuration -----
-
-@dataclass
-class Authorization:
-    enable: bool = False
-    user_name: Optional[str] = None
-    pw: Optional[str] = None
-
-
-@dataclass
-class Authentication:
-    enable: bool = False
-    certfile: Optional[str] = None
-    keyfile: Optional[str] = None
-    ca_certs: Optional[str] = None
-
-
-@dataclass
-class BrokerConfig:
-    socket: str = '127.0.0.1:1833'
-    client_id: str = ''
-    keep_alive: int = 300
-    authorization: Authorization = field(default_factory=Authorization)
-    authentication: Authentication = field(default_factory=Authentication)
-
-
-@dataclass
-class Subscription:
-    """Topic Filter and QoS for one subscription.
-
-    Create one of these for each command source.
-    """
-    topic_filter: str = 'yuuki_user/oc2/cmd'
-    qos: int = 1
-
-
-@dataclass
-class Publish:
-    """Topic Name and QoS for one publish destination.
-
-    Create one of these for each response destination.
-    """
-    topic_name: str = 'yuuki_user/oc2/rsp'
-    qos: int = 1
-
-
-@dataclass
-class MqttConfig:
-    """Configuration object to be passed to Mqtt Transport init.
-
-    Accept the defaults or customize as necessary.
-
-    broker: socket, client_id, authorization, authentication
-    subscriptions: list of topic_name/qos objects for commands
-    publishes: list of topic_filter/qos objects for responses
-    """
-    broker: BrokerConfig = field(default_factory=BrokerConfig)
-    subscriptions: List[Subscription] = field(default_factory=lambda: [Subscription()])
-    publishes: List[Publish] = field(default_factory=lambda: [Publish()])
-
-
-# ----- Transport -----
 
 class Mqtt(Consumer):
     """Implements Transport base class for MQTT"""
 
     def __init__(self, cmd_handler, mqtt_config: MqttConfig):
         super().__init__(cmd_handler, mqtt_config)
-        self.host, port = self.transport_config.broker.socket.split(':')
-        self.port = int(port)
-        self.cmd_subs = self.transport_config.subscriptions
-        self.rsp_pubs = self.transport_config.publishes
-        self.host = self.host
-        self.port = self.port
-        self.keep_alive = self.transport_config.broker.keep_alive
-        self.use_credentials = self.transport_config.broker.authorization.enable
-        self.user_name = self.transport_config.broker.authorization.user_name
-        self.password = self.transport_config.broker.authorization.pw
-        self.client_id = self.transport_config.broker.client_id
-        self.use_tls = self.transport_config.broker.authentication.enable
-        self.ca_certs = self.transport_config.broker.authentication.ca_certs
-        self.certfile = self.transport_config.broker.authentication.certfile
-        self.keyfile = self.transport_config.broker.authentication.keyfile
-
-        self._client = mqtt.Client(client_id=self.client_id, protocol=mqtt.MQTTv5)
+        self._client = mqtt.Client(client_id=self.config.broker.client_id, protocol=mqtt.MQTTv5)
         self._client.on_connect = self._on_connect
         self._client.on_message = self._on_message
-        if self.use_credentials:
-            self._client.username_pw_set(self.user_name, password=self.password)
+        if self.config.broker.authorization.enable:
+            self._client.username_pw_set(username=self.config.broker.authorization.username,
+                                         password=self.config.broker.authorization.password)
+        if self.config.broker.authentication.enable:
+            logging.info('Will use TLS')
+            self._client.tls_set(ca_certs=self.config.broker.authentication.ca_certs,
+                                 certfile=self.config.broker.authentication.certfile,
+                                 keyfile=self.config.broker.authentication.keyfile)
 
     def _on_connect(self, client, userdata, flags, reasonCode, properties):
         logging.debug('OnConnect')
-        for sub_info in self.cmd_subs:
-            logging.info(f'Subscribing --> {sub_info.topic_filter} {sub_info.qos} ...')
-            self._client.subscribe(sub_info.topic_filter, sub_info.qos)
+        for subscription in self.config.subscriptions:
+            logging.info(f'Subscribing --> {subscription.topic} {subscription.qos} ...')
+            self._client.subscribe(subscription.topic, subscription.qos)
 
     def _on_message(self, client, userdata, msg):
         logging.debug(f'OnMessage: {msg.payload}')
@@ -162,21 +88,19 @@ class Mqtt(Consumer):
         openc2_properties.ContentType = "application/openc2"
         openc2_properties.UserProperty = [("msgType", "rsp"), ("encoding", encode)]
 
-        for rsp_pub_info in self.rsp_pubs:
-            message_info = self._client.publish(rsp_pub_info.topic_name, payload=response,
-                                                qos=rsp_pub_info.qos, properties=openc2_properties)
+        for publication in self.config.publications:
+            message_info = self._client.publish(publication.topic, payload=response,
+                                                qos=publication.qos, properties=openc2_properties)
             logging.debug(f'Message Info: {message_info}')
-            logging.info(f'Publishing --> qos: {rsp_pub_info.qos} \n{response}')
+            logging.info(f'Publishing --> qos: {publication.qos} \n{response}')
 
     def start(self):
         try:
-            if self.use_tls:
-                logging.info('Will use TLS')
-                self._client.tls_set(ca_certs=self.ca_certs, certfile=self.certfile, keyfile=self.keyfile)
-            logging.info(f'Connecting --> {self.host}:{self.port} --> keep_alive:{self.keep_alive} ...')
-            self._client.connect(self.host, self.port, keepalive=self.keep_alive,
+            logging.info(f'Connecting --> {self.config.broker.host}:{self.config.broker.port}')
+            self._client.connect(host=self.config.broker.host, port=self.config.broker.port,
+                                 keepalive=self.config.broker.keep_alive,
                                  clean_start=mqtt.MQTT_CLEAN_START_FIRST_ONLY, properties=None)
             self._client.loop_forever()
         except ConnectionRefusedError:
-            logging.error(f'BrokerConfig at {self.host}:{self.port} refused connection')
+            logging.error(f'BrokerConfig at {self.config.broker.host}:{self.config.broker.port} refused connection')
             raise

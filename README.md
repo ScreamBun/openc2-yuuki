@@ -50,24 +50,6 @@ OpenC2 Producer               ----------------- Yuuki (OpenC2 Consumer)---------
 
 ```
 
-Yuuki is designed so that any of these steps can be customized or replaced.
-
-* Want to use **MQTT**, **HTTP** or even add a **new transport**? 
-* Want to serialize your messages with **CBOR** instead of **JSON**?
-* Want to use a **schema** validation tool, instead of simple Python functions to validate OpenC2 Messages?
-
-For all of these goals, the solution is to swap out what you'd like replace. Each step is independent of the others.
-
-For example, look at how the main OpenC2 Consumer is constructed in **http_example.py** in the *examples* folder:
-
-```python
-consumer = Consumer(cmd_handler = CmdHandler(validator = validate_and_convert), transport = Http(http_config))
-```
-
-See the **Http** and **validate_and_convert** arguments? Simply replace any of those with a library of your own; just as long as you follow the same Yuuki interface.
-
-Before getting ahead of ourselves with customization, let's just run a simple example: HTTP
-
 # Installation
 
 Using Python3.7+, install with venv and pip:
@@ -171,10 +153,10 @@ In the Yuuki Consumer shell, hit CTRL-C to stop the process.
 # Example: MQTT
 MQTT requires a little configuration. We'll need to connect to an MQTT broker. Mosquitto is a free broker that's always up (and offers no privacy).
 
-At the bottom of `mqtt_example.py` in the *examples* directory, supply the socket address for the broker.
+At the bottom of `mqtt_example.py` in the *examples* directory, supply the host and port for the broker.
 
 ```python
-    mqtt_config = MqttConfig(broker=BrokerConfig(socket='test.mosquitto.org:1883'))
+    mqtt_config = MqttConfig(broker=BrokerConfig(host='test.mosquitto.org', port=1883))
 ```
 
 Save your file and start the example:
@@ -192,8 +174,8 @@ If you'd like to change the topics, you can like so:
                     ...
                     subscriptions=[Subscription('subscribe/to/command/topic', 1),
                                    Subscription('another/command/topic', 0)],
-                    publishes=[Publish('publish/responses/here', 0),
-                               Publish('another/response/topic', 3)])
+                    publishes=[Publication('publish/responses/here', 0),
+                               Publication('another/response/topic', 3)])
 ```
 
 ## Test MQTT Transport
@@ -251,9 +233,9 @@ def on_message(client, userdata, msg):
 mqtt_client = mqtt.Client(protocol=mqtt.MQTTv5)
 mqtt_client.on_message = on_message
 mqtt_client.connect(host="test.mosquitto.org", port=1883, keepalive=60, clean_start=False)
-mqtt_client.subscribe(topic="yuuki/oc2/rsp",
+mqtt_client.subscribe(topic="oc2/rsp",
                       options=SubscribeOptions(qos=1, noLocal=True, retainAsPublished=True, retainHandling=0))
-mqtt_client.publish(topic="yuuki/oc2/cmd", payload=json.dumps(payload_json),
+mqtt_client.publish(topic="oc2/cmd", payload=json.dumps(payload_json),
                     qos=1, retain=False, properties=oc2_properties)
 mqtt_client.loop_forever()
 
@@ -299,7 +281,7 @@ Success! The Yuuki Consumer successfully received an OpenC2 Command, then publis
 
 This example tests sending OpenC2 commands using both the Event and Request/Response messaging capabilities of OpenDXL.
 
-To configure Yuuki to use OpenDXL, set `CONFIG_FILE` in `oc2_opendxl.py` to the path where your `dxlclient.config` file is located.
+To configure Yuuki to use OpenDXL, set `config_file` in `opendxl_config.py` to the path where your `dxlclient.config` file is located.
 
 Then run the example found in the `examples` directory:
 
@@ -328,9 +310,9 @@ from dxlclient.client import DxlClient
 from dxlclient.client_config import DxlClientConfig
 from dxlclient.message import Message, Request, Event
 
-EVENT_REQUEST_TOPIC = "/oc2/cmd"
-EVENT_RESPONSE_TOPIC = "/oc2/rsp"
-SERVICE_TOPIC = "/oc2"
+EVENT_REQUEST_TOPIC = "oc2/cmd"
+EVENT_RESPONSE_TOPIC = "oc2/rsp"
+SERVICE_TOPIC = "oc2"
 CONFIG_FILE = ""
 
 config = DxlClientConfig.create_dxl_config_from_file(CONFIG_FILE)

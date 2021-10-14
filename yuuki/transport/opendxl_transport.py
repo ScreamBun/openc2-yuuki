@@ -1,5 +1,3 @@
-from dataclasses import dataclass
-
 from dxlclient.client import DxlClient
 from dxlclient.client_config import DxlClientConfig
 from dxlclient.callbacks import EventCallback, RequestCallback
@@ -8,16 +6,8 @@ from dxlclient.service import ServiceRegistrationInfo
 
 from yuuki import OpenC2RspFields, StatusCode
 from yuuki.openc2.openc2_types import OpenC2Headers
+from yuuki.transport.config import OpenDXLConfig
 from yuuki.transport.consumer import Consumer
-
-
-@dataclass
-class OpenDXLConfig:
-    """OpenDXL Configuration to pass to OpenDXL Transport init."""
-    EVENT_REQUEST_TOPIC = "/oc2/cmd"
-    EVENT_RESPONSE_TOPIC = "/oc2/rsp"
-    SERVICE_TOPIC = "/oc2"
-    CONFIG_FILE = ""
 
 
 class OC2EventCallback(EventCallback):
@@ -37,7 +27,7 @@ class OC2EventCallback(EventCallback):
             response = self.get_response(event.payload, encode)
 
         if response is not None:
-            event = Event(self.config.EVENT_RESPONSE_TOPIC)
+            event = Event(self.config.event_response_topic)
             event.payload = response
             event.other_fields['encoding'] = encode
             event.other_fields['contentType'] = 'application/openc2'
@@ -73,15 +63,15 @@ class OC2RequestCallback(RequestCallback):
 class OpenDxl(Consumer):
     def __init__(self, cmd_handler, opendxl_config: OpenDXLConfig):
         super().__init__(cmd_handler, opendxl_config)
-        self.dxl_client_config = DxlClientConfig.create_dxl_config_from_file(self.transport_config.CONFIG_FILE)
+        self.dxl_client_config = DxlClientConfig.create_dxl_config_from_file(self.config.config_file)
 
     def start(self):
         with DxlClient(self.dxl_client_config) as client:
             client.connect()
-            client.add_event_callback(self.transport_config.EVENT_REQUEST_TOPIC,
-                                      OC2EventCallback(client, self.transport_config, self.get_response))
+            client.add_event_callback(self.config.event_request_topic,
+                                      OC2EventCallback(client, self.config, self.get_response))
             info = ServiceRegistrationInfo(client, "OC2Service")
-            info.add_topic(self.transport_config.SERVICE_TOPIC, OC2RequestCallback(client, self.get_response))
+            info.add_topic(self.config.service_topic, OC2RequestCallback(client, self.get_response))
             client.register_service_sync(info, 10)
 
             while True:
