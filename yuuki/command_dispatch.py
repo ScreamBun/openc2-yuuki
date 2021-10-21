@@ -6,7 +6,7 @@ import logging
 from functools import partial
 
 from .command_decorators import _OC2PairMeta
-from ..openc2_types import OpenC2Msg, StatusCode, OpenC2CmdFields, OpenC2RspFields
+from .openc2_types import OpenC2Msg, StatusCode, OpenC2CmdFields, OpenC2RspFields
 
 
 class OpenC2CmdDispatchBase(metaclass=_OC2PairMeta):
@@ -76,14 +76,11 @@ class OpenC2CmdDispatchBase(metaclass=_OC2PairMeta):
             if len(oc2_cmd.actuator.keys()) == 1:
                 cmd_actuator_nsid, = oc2_cmd.actuator.keys()
 
-        cmd_action = oc2_cmd.action
-        cmd_target = oc2_cmd.target_name
-
-        if cmd_action == 'query' and cmd_target == 'features':
+        if oc2_cmd.action == 'query' and oc2_cmd.target_name == 'features':
             func_name = getattr(self, 'oc2_query_features')
 
-        elif (cmd_action in self.oc2_methods_dict.keys() and
-              cmd_target in self.oc2_methods_dict[cmd_action].keys()):
+        elif (oc2_cmd.action in self.oc2_methods_dict.keys() and
+              oc2_cmd.target_name in self.oc2_methods_dict[oc2_cmd.action].keys()):
 
             if cmd_actuator_nsid is None:
                 # Grab the first matching action-target pair. 
@@ -91,12 +88,12 @@ class OpenC2CmdDispatchBase(metaclass=_OC2PairMeta):
                 # is undefined in the OpenC2 language, so we don't try to solve that here,
                 # and instead just call the first matching function
 
-                first_actuator_nsid, = self.oc2_methods_dict[cmd_action][cmd_target].keys()
-                func_name = self.oc2_methods_dict[cmd_action][cmd_target][first_actuator_nsid]
+                first_actuator_nsid, = self.oc2_methods_dict[oc2_cmd.action][oc2_cmd.target_name].keys()
+                func_name = self.oc2_methods_dict[oc2_cmd.action][oc2_cmd.target_name][first_actuator_nsid]
 
             else:
-                if cmd_actuator_nsid in self.oc2_methods_dict[cmd_action][cmd_target].keys():
-                    func_name = self.oc2_methods_dict[cmd_action][cmd_target][cmd_actuator_nsid]
+                if cmd_actuator_nsid in self.oc2_methods_dict[oc2_cmd.action][oc2_cmd.target_name].keys():
+                    func_name = self.oc2_methods_dict[oc2_cmd.action][oc2_cmd.target_name][cmd_actuator_nsid]
 
                 else:
                     func_name = getattr(self, 'oc2_no_matching_nsid')

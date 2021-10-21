@@ -18,10 +18,10 @@ my_openc2_consumer.start()
 from werkzeug.http import parse_options_header
 from quart import Quart, request, make_response
 
-from .config import HttpConfig
+from .http_config import HttpConfig
 from .consumer import Consumer
 
-from ..openc2.openc2_types import StatusCode, OpenC2Headers, OpenC2RspFields
+from .openc2_types import StatusCode, OpenC2Headers, OpenC2RspFields
 
 
 class Http(Consumer):

@@ -21,9 +21,9 @@ import paho.mqtt.client as mqtt
 from paho.mqtt.packettypes import PacketTypes
 from paho.mqtt.properties import Properties
 
-from .config import MqttConfig
+from .mqtt_config import MqttConfig
 from .consumer import Consumer
-from ..openc2.openc2_types import StatusCode, OpenC2Headers, OpenC2RspFields
+from .openc2_types import StatusCode, OpenC2Headers, OpenC2RspFields
 
 
 class Mqtt(Consumer):

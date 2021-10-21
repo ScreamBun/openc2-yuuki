@@ -5,8 +5,8 @@ from concurrent.futures import ThreadPoolExecutor
 
 from pydantic import ValidationError
 
-from ..openc2.openc2_types import OpenC2Msg, OpenC2Headers, OpenC2Body, OpenC2Rsp, OpenC2RspFields, StatusCode
-from ..serialization import deserialize, serialize
+from .openc2_types import OpenC2Msg, OpenC2Headers, OpenC2Body, OpenC2Rsp, OpenC2RspFields, StatusCode
+from .serialization import deserialize, serialize
 
 
 class Consumer:
