@@ -14,13 +14,11 @@ my_openc2_consumer = Consumer(transport=http_transport, ...)
 my_openc2_consumer.start()
 
 """
-
+from flask import Flask, request, make_response
 from werkzeug.http import parse_options_header
-from quart import Quart, request, make_response
 
 from .http_config import HttpConfig
 from .consumer import Consumer
-
 from .openc2_types import StatusCode, OpenC2Headers, OpenC2RspFields
 
 
@@ -29,12 +27,12 @@ class Http(Consumer):
 
     def __init__(self, cmd_handler, http_config: HttpConfig):
         super().__init__(cmd_handler, http_config)
-        self.app = Quart('yuuki')
+        self.app = Flask('yuuki')
         self.setup(self.app)
 
     def setup(self, app):
         @app.route('/', methods=['POST'])
-        async def receive():
+        def receive():
             try:
                 encode = self.verify_headers(request.headers)
             except ValueError:
@@ -42,10 +40,10 @@ class Http(Consumer):
                 oc2_body = OpenC2RspFields(status=StatusCode.BAD_REQUEST, status_text='Malformed HTTP Request')
                 response = self.make_response_msg(oc2_body, OpenC2Headers(), encode)
             else:
-                response = self.get_response(await request.get_data(), encode)
+                response = self.get_response(request.get_data(), encode)
 
             if response is not None:
-                http_response = await make_response(response)
+                http_response = make_response(response)
                 http_response.content_type = f'application/openc2-rsp+{encode};version=1.0'
                 return http_response
             else:

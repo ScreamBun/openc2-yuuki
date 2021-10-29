@@ -9,8 +9,8 @@ See the mqtt_example.py for details.
 """
 
 from yuuki import Http, HttpConfig
-from command_handler import CommandHandler
+from command_handler import testcmdhandler
 
 
-consumer = Http(CommandHandler(), HttpConfig())
+consumer = Http(testcmdhandler, HttpConfig())
 consumer.start()

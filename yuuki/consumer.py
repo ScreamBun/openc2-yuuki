@@ -2,6 +2,7 @@ import logging
 from time import time
 from pprint import pformat
 from concurrent.futures import ThreadPoolExecutor
+from typing import Union
 
 from pydantic import ValidationError
 
@@ -28,7 +29,7 @@ class Consumer:
     def start(self):
         raise NotImplementedError
 
-    def get_response(self, raw_data, encode):
+    def get_response(self, raw_data, encode: str) -> Union[str, bytes, None]:
         try:
             message = deserialize(raw_data, encode)
         except KeyError:
@@ -41,25 +42,26 @@ class Consumer:
         logging.info(f'Received command:\n{pformat(message)}')
 
         try:
-            openc2_cmd = OpenC2Msg(**message)
+            openc2_msg = OpenC2Msg(**message)
         except ValidationError:
             openc2_rsp = OpenC2RspFields(status=StatusCode.BAD_REQUEST, status_text='Malformed OpenC2 message')
             return self.make_response_msg(openc2_rsp, encode=encode)
 
         try:
-            actuator_callable = self.cmd_handler.get_actuator_callable(openc2_cmd)
-        except NotImplementedError:
+            actuator_callable = self.cmd_handler.get_actuator_callable(openc2_msg)
+        except TypeError as e:
+            logging.exception(e)
             openc2_rsp = OpenC2RspFields(status=StatusCode.BAD_REQUEST, status_text='No matching actuator found')
-            return self.make_response_msg(openc2_rsp, headers=openc2_cmd.headers, encode=encode)
+            return self.make_response_msg(openc2_rsp, headers=openc2_msg.headers, encode=encode)
 
-        if openc2_cmd.body.openc2.request.args and openc2_cmd.body.openc2.request.args.response_requested:
-            response_requested = openc2_cmd.body.openc2.request.args.response_requested
+        if openc2_msg.body.openc2.request.args and openc2_msg.body.openc2.request.args.response_requested:
+            response_requested = openc2_msg.body.openc2.request.args.response_requested
             if response_requested == 'none':
                 self.executor.submit(actuator_callable)
                 return None
             elif response_requested == 'ack':
                 self.executor.submit(actuator_callable)
-                return self.make_response_msg(OpenC2RspFields(status=StatusCode.PROCESSING), openc2_cmd.headers, encode)
+                return self.make_response_msg(OpenC2RspFields(status=StatusCode.PROCESSING), openc2_msg.headers, encode)
             elif response_requested == 'status':
                 pass
             elif response_requested == 'complete':
@@ -72,17 +74,17 @@ class Consumer:
             return self.make_response_msg(openc2_rsp, encode=encode)
 
         try:
-            return self.make_response_msg(openc2_rsp, openc2_cmd.headers, encode)
+            return self.make_response_msg(openc2_rsp, openc2_msg.headers, encode)
         except (ValueError, TypeError) as e:
             openc2_rsp = OpenC2RspFields(status=StatusCode.NOT_FOUND, status_text=f'Serialization failed: {e}')
-            return self.make_response_msg(openc2_rsp, openc2_cmd.headers, encode)
+            return self.make_response_msg(openc2_rsp, openc2_msg.headers, encode)
 
     @staticmethod
-    def make_response_msg(oc2_body, headers=OpenC2Headers(), encode=None):
+    def make_response_msg(response_body, headers=OpenC2Headers(), encode: str = None) -> Union[str, bytes]:
         message = OpenC2Msg(headers=OpenC2Headers(request_id=headers.request_id,
                                                   from_='yuuki', to=headers.from_,
                                                   created=round(time() * 1000)),
-                            body=OpenC2Body(openc2=OpenC2Rsp(response=oc2_body)))
+                            body=OpenC2Body(openc2=OpenC2Rsp(response=response_body)))
         response = message.dict(by_alias=True)
         logging.info(f'Sending Response :\n{pformat(response)}')
         return serialize(response, encode)

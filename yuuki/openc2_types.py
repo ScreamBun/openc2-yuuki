@@ -96,15 +96,22 @@ class OpenC2CmdFields(BaseModel, extra=Extra.forbid, allow_mutation=False):
     actuator: Optional[Dict[str, Dict[Any, Any]]]
     command_id: Optional[str]
 
-    @validator('target')
-    def validate_target_length(cls, target: Dict):
-        if len(target) != 1:
-            raise ValueError('Target dictionary length must be one')
-        return target
+    @validator('target', 'actuator')
+    def validate_choice_length(cls, choice: Dict):
+        if len(choice) != 1:
+            raise ValueError('Choice fields must have a length of one')
+        return choice
 
     @property
     def target_name(self):
         return next(iter(self.target))
+
+    @property
+    def actuator_name(self):
+        if self.actuator is None:
+            return None
+        else:
+            return next(iter(self.actuator))
 
 
 class OpenC2Cmd(BaseModel, extra=Extra.forbid, allow_mutation=False):

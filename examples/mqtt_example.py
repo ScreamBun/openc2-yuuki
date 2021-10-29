@@ -1,8 +1,8 @@
 """
-Example Implementation of an OpenC2 Consumer with MQTT and JSON.
+Example Implementation of an OpenC2 Consumer with MQTT.
 
 First a Command Handler is defined, then we instantiate
-a Consumer with it and our chosen Transport(MQTT) and Serialization(Json).
+a Consumer with it and our chosen Transport (MQTT).
 """
 from yuuki import (
     Mqtt,
@@ -13,7 +13,7 @@ from yuuki import (
     Publication,
     Subscription
 )
-from command_handler import CommandHandler
+from command_handler import cmdhandler
 
 
 mqtt_config = MqttConfig(
@@ -42,5 +42,5 @@ mqtt_config = MqttConfig(
         )]
 )
 
-consumer = Mqtt(CommandHandler(), mqtt_config)
+consumer = Mqtt(cmdhandler, mqtt_config)
 consumer.start()

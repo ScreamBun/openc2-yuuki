@@ -14,7 +14,7 @@ from yuuki import (
     Publication,
     Subscription
 )
-from command_handler import CommandHandler
+from command_handler import testcmdhandler
 
 
 mqtt_config = MqttConfig(
@@ -43,5 +43,5 @@ mqtt_config = MqttConfig(
         )]
 )
 
-consumer = Mqtt(CommandHandler(), mqtt_config)
+consumer = Mqtt(testcmdhandler, mqtt_config)
 consumer.start()

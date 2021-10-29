@@ -1,16 +1,6 @@
 import time
 
 import pytest
-import json
-import cbor2
-
-
-@pytest.fixture
-def data_formats():
-    return [
-        ("json", json.dumps, json.loads),
-        ("cbor", cbor2.dumps, cbor2.loads)
-    ]
 
 
 @pytest.fixture

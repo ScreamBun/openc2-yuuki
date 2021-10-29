@@ -1,5 +1,4 @@
-from .command_dispatch import OpenC2CmdDispatchBase
-from .command_decorators import oc2_query_features, oc2_no_matching_pair, oc2_no_matching_actuator, oc2_pair
+from .command_dispatch import OpenC2Dispatch
 from .openc2_types import OpenC2Cmd, OpenC2CmdFields, StatusCode, OpenC2Rsp, OpenC2RspFields, OpenC2Msg
 from .serialization import deserialize, serialize
 from .http_transport import Http

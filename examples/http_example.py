@@ -1,15 +1,12 @@
 """
-Example Implementation of an OpenC2 Consumer with HTTP and JSON.
+Example Implementation of an OpenC2 Consumer with HTTP.
 
 First a Command Handler is defined, then we instantiate
-a Consumer with it and our chosen Transport(HTTP) and Serialization(Json).
-
-To keep the file short and sweet, we use wildcard * imports and no comments.
-See the mqtt_example.py for details.
+a Consumer with it and our chosen Transport (HTTP).
 """
 from yuuki import Http, HttpConfig
-from command_handler import CommandHandler
+from command_handler import cmdhandler
 
 
-consumer = Http(CommandHandler(), HttpConfig())
+consumer = Http(cmdhandler, HttpConfig())
 consumer.start()

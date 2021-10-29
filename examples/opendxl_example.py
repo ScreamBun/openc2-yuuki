@@ -1,6 +1,5 @@
-from yuuki.transport.opendxl_transport import OpenDxl
-from yuuki.transport.opendxl_transport import OpenDXLConfig
-from command_handler import CommandHandler
+from yuuki import OpenDxl, OpenDXLConfig
+from command_handler import cmdhandler
 
-consumer = OpenDxl(CommandHandler(), OpenDXLConfig())
+consumer = OpenDxl(cmdhandler, OpenDXLConfig())
 consumer.start()
