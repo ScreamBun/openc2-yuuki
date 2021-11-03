@@ -4,9 +4,9 @@ from dxlclient.callbacks import EventCallback, RequestCallback
 from dxlclient.message import Event, Message, Request, Response
 from dxlclient.service import ServiceRegistrationInfo
 
-from .consumer import Consumer
-from .openc2_types import OpenC2Headers, OpenC2RspFields, StatusCode
-from .opendxl_config import OpenDXLConfig
+from yuuki.consumer import Consumer
+from yuuki.openc2_types import OpenC2Headers, OpenC2RspFields, StatusCode
+from .config import OpenDXLConfig
 
 
 class OC2EventCallback(EventCallback):

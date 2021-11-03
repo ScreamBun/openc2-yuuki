@@ -17,9 +17,9 @@ my_openc2_consumer.start()
 from flask import Flask, request, make_response
 from werkzeug.http import parse_options_header
 
-from .http_config import HttpConfig
-from .consumer import Consumer
-from .openc2_types import StatusCode, OpenC2Headers, OpenC2RspFields
+from .config import HttpConfig
+from yuuki.consumer import Consumer
+from yuuki.openc2_types import StatusCode, OpenC2Headers, OpenC2RspFields
 
 
 class Http(Consumer):
