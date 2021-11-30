@@ -9,7 +9,7 @@ logging.basicConfig(format='%(levelname)s:%(message)s', level=logging.INFO)
 testcmdhandler = OpenC2Dispatch(60, ['1.0'])
 
 
-@testcmdhandler.oc2_pair('slpf', 'deny', 'ipv4_connection')
+@testcmdhandler.openc2_pair('deny', 'ipv4_connection', 'slpf')
 def deny_ipv4_connection(oc2_cmd: OpenC2CmdFields) -> OpenC2RspFields:
     """
     Stub for the SLPF OpenC2 Command 'deny ipv4_connection'.
@@ -35,7 +35,7 @@ def deny_ipv4_connection(oc2_cmd: OpenC2CmdFields) -> OpenC2RspFields:
     return OpenC2RspFields(status=StatusCode.OK, status_text=status_text)
 
 
-@testcmdhandler.oc2_pair('slpf', 'deny', 'ipv4_net')
+@testcmdhandler.openc2_pair('deny', 'ipv4_net', 'slpf')
 def deny_ipv4_net(oc2_cmd: OpenC2CmdFields) -> OpenC2RspFields:
     if isinstance(oc2_cmd.target['ipv4_net'], str):
         try:
@@ -50,7 +50,7 @@ def deny_ipv4_net(oc2_cmd: OpenC2CmdFields) -> OpenC2RspFields:
         return OpenC2RspFields(status=StatusCode.BAD_REQUEST)
 
 
-@testcmdhandler.oc2_pair('x-acme', 'detonate', 'x-acme:roadrunner')
+@testcmdhandler.openc2_pair('detonate', 'x-acme:roadrunner', 'x-acme')
 def roadrunner(oc2_cmd: OpenC2CmdFields) -> OpenC2RspFields:
     """
     Custom actuator profile implementation for Road Runner hunting.

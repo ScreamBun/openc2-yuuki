@@ -1,3 +1,25 @@
+"""OpenC2 Command Handler
+
+This will dispatch received commands to functions that are tagged with the openc2_pair decorator.
+
+Comes with a built-in handler for query-features.
+
+Example:
+
+my_dispatch = OpenC2Dispatch(rate_limit=60, versions=['1.0']):
+    ...
+    @my_dispatch.openc2_pair('my_action', 'my_target', 'my_actuator_nsid'):
+    def a_function(self, oc2_cmd):
+        ...
+
+The above function will be called when this message arrives off
+the transport:
+
+action: 'my_action'
+target: {'my_target' : ...}
+actuator: {my_actautor_nsid : {...}}
+
+"""
 import logging
 from functools import partial
 from collections import defaultdict
@@ -7,31 +29,6 @@ from .openc2_types import OpenC2Msg, StatusCode, OpenC2CmdFields, OpenC2RspField
 
 
 class OpenC2Dispatch:
-    """Base class to use for your OpenC2 Command Handler.
-
-    This will dispatch received cmds to functions that you tag
-    with the decorators in command_util.py.
-
-    Comes with a built-in handler for query-features.
-
-    Example:
-
-    my_dispatch = OpenC2Dispatch(rate_limit=60, versions=['1.0']):
-        ...
-        @my_dispatch.oc2_pair('my_actuator_nsid', 'my_action', 'my_target'):
-        def a_function(self, oc2_cmd):
-            ...
-
-    The above function will be called when this message arrives off
-    the transport:
-
-    action: 'my_actuator_nsid'
-    target: {'my_target' : ...}
-    actuator: {my_actautor_nsid : {...}}
-
-    See the implementation of get_actuator_callable for details.
-
-    """
 
     def __init__(self, rate_limit: int, versions: List[str]):
         self.dispatch: DefaultDict[str: DefaultDict[str: Dict[str: Callable]]] = defaultdict(lambda: defaultdict(dict))
@@ -42,6 +39,12 @@ class OpenC2Dispatch:
         self.versions: List[str] = versions
 
     def get_actuator_callable(self, oc2_msg: OpenC2Msg) -> Callable:
+        """Identifies the appropriate function to perform the received OpenC2 command
+
+        :param oc2_msg: the OpenC2 message received by the consumer
+
+        :return: the function with the received OpenC2 command supplied as an argument
+        """
 
         logging.debug('Validating...')
         logging.info(f'oc2_msg:\n{oc2_msg}')
@@ -65,7 +68,7 @@ class OpenC2Dispatch:
         else:
             raise TypeError(f'No action-target pair for {oc2_cmd.action} {oc2_cmd.target_name}')
 
-        logging.debug(f'Will call a method named: {func.__name__}')
+        logging.debug(f'Will call a function named: {func.__name__}')
         return partial(func, oc2_cmd)
 
     def query_features(self, oc2_cmd: OpenC2CmdFields) -> OpenC2RspFields:
@@ -98,24 +101,33 @@ class OpenC2Dispatch:
         else:
             return OpenC2RspFields(status=StatusCode.OK)
 
-    def oc2_pair(self, actuator_nsid: str, action: str, target: str) -> Callable:
-        """Decorator for your Consumer/Actuator functions.
+    def openc2_pair(self, action: str, target: str, actuator_nsid: str) -> Callable:
+        """Decorator for Consumer/Actuator functions.
 
         Example:
 
         my_dispatch = OpenC2Dispatch(rate_limit=60, versions=['1.0']):
             ...
-            @my_dispatch.oc2_pair('slpf', 'deny', 'ipv4_connection')
+            @my_dispatch.openc2_pair('slpf', 'deny', 'ipv4_connection')
             def some_function(oc2_cmd):
                 return OpenC2RspFields()
         """
-        def decorator(method: Callable) -> Callable:
-            self.register_pair(method, action, target, actuator_nsid)
-            return method
+        def decorator(function: Callable) -> Callable:
+            self.register_pair(function, action, target, actuator_nsid)
+            return function
         return decorator
 
-    def register_pair(self, method: Callable, action: str, target: str, actuator_nsid: str) -> None:
-        self.dispatch[action][target][actuator_nsid] = method
+    def register_pair(self, function: Callable, action: str, target: str, actuator_nsid: str) -> None:
+        """Adds function to the dispatch dictionary and the dictionary of action-target pairs.
+        Adds actuator_nsid to the list of supported actuator profiles if the list does not already contain it.
+
+        :param function: the function to be called when the consumer receives a command matching the corresponding
+            action, target, and actuator_nsid.
+        :param action: name of the action to be performed by the function
+        :param target: name of the object of the action
+        :param actuator_nsid: NSID of the actuator profile that the action-target pair belongs to
+        """
+        self.dispatch[action][target][actuator_nsid] = function
         self.pairs[action].append(target)
         if actuator_nsid not in self.profiles:
             self.profiles.append(actuator_nsid)

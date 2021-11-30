@@ -165,7 +165,7 @@ Save your file and start the example:
 python mqtt_example.py
 ```
 
-That's it! Your OpenC2 MQTT Consumer is ready for any published commands. If you're familiar with MQTT, by default Yuuki listens for OpenC2 commands on the topic **yuuki_user/oc2/cmd**, and publishes its responses to **yuuki_user/oc2/rsp**. Next, we'll write a quick script to make sure it's working.
+That's it! Your OpenC2 MQTT Consumer is ready for any published commands. If you're familiar with MQTT, by default Yuuki listens for OpenC2 commands on the topic **oc2/cmd**, and publishes its responses to **oc2/rsp**. Next, we'll write a quick script to make sure it's working.
 
 If you'd like to change the topics, you can like so:
 

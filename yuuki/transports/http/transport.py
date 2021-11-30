@@ -1,17 +1,7 @@
-"""
-HTTP Transport
+"""HTTP Transport
 
-Contains the transport class to instantiate, and its config to customize.
-
-This tranport receives messages, then sends them on to a handler,
+This transport receives messages, then sends them on to a handler,
 and awaits a response to send back.
-
-Use as an argument to a Consumer constructor, eg:
-
-http_config = HttpConfig(consumer_socket=...)
-http_transport = Http(http_config)
-my_openc2_consumer = Consumer(transport=http_transport, ...)
-my_openc2_consumer.start()
 
 """
 from flask import Flask, request, make_response
@@ -23,7 +13,7 @@ from yuuki.openc2_types import StatusCode, OpenC2Headers, OpenC2RspFields
 
 
 class Http(Consumer):
-    """Implements Transport base class for HTTP"""
+    """Implements Transport class for HTTP"""
 
     def __init__(self, cmd_handler, http_config: HttpConfig):
         super().__init__(cmd_handler, http_config)
@@ -60,6 +50,14 @@ class Http(Consumer):
 
     @staticmethod
     def verify_headers(headers):
+        """
+        Verifies that the HTTP headers for the received OpenC2 command are valid, and parses the message serialization
+        format from the headers
+
+        :param headers: HTTP headers from received OpenC2 command
+
+        :return: string specifying the serialization format of the received OpenC2 command
+        """
         if 'Host' and 'Content-type' in headers:
             try:
                 encode = parse_options_header(headers['Content-type'])[0].split('/')[1].split('+')[1]

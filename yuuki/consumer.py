@@ -1,3 +1,5 @@
+"""OpenC2 Consumer
+"""
 import logging
 from time import time
 from pprint import pformat
@@ -11,9 +13,13 @@ from .serialization import deserialize, serialize
 
 
 class Consumer:
-    """Base class for any transports implemented."""
+    """Base class for transports to inherit from."""
 
     def __init__(self, cmd_handler, transport_config):
+        """
+        :param cmd_handler: handles received commands, and contains 'features' information about the consumer
+        :param transport_config: transport-specific configuration
+        """
         self.cmd_handler = cmd_handler
         self.config = transport_config
         self.executor = ThreadPoolExecutor()
@@ -27,9 +33,17 @@ class Consumer:
         ''')
 
     def start(self):
+        """Runs the consumer after configuration steps are complete."""
         raise NotImplementedError
 
     def get_response(self, raw_data, encode: str) -> Union[str, bytes, None]:
+        """Processes commands received from transport then returns a response for the transport to send.
+
+        :param raw_data: the OpenC2 command as received by the transport
+        :param encode: string specifying the serialization format for the command/response
+
+        :return: serialized OpenC2 response
+        """
         try:
             message = deserialize(raw_data, encode)
         except KeyError:
@@ -70,6 +84,7 @@ class Consumer:
         try:
             openc2_rsp = actuator_callable()
         except Exception as e:
+            logging.exception('Actuator failed')
             openc2_rsp = OpenC2RspFields(status=StatusCode.BAD_REQUEST, status_text=f'Actuator failed: {e}')
             return self.make_response_msg(openc2_rsp, encode=encode)
 
@@ -81,6 +96,15 @@ class Consumer:
 
     @staticmethod
     def make_response_msg(response_body, headers=OpenC2Headers(), encode: str = None) -> Union[str, bytes]:
+        """
+        Creates and serializes the OpenC2 response to be returned to the transport
+
+        :param response_body: information to populate OpenC2 response fields
+        :param headers: information to populate OpenC2 response headers
+        :param encode: string specifying the serialization format for the response
+
+        :return: serialized OpenC2 response
+        """
         message = OpenC2Msg(headers=OpenC2Headers(request_id=headers.request_id,
                                                   from_='yuuki', to=headers.from_,
                                                   created=round(time() * 1000)),
