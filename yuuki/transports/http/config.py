@@ -1,6 +1,6 @@
 from typing import Optional
 
-from pydantic import BaseModel, BaseSettings, root_validator
+from pydantic import BaseSettings, root_validator
 
 
 class HTTPAuthentication(BaseSettings):
@@ -18,7 +18,6 @@ class HTTPAuthentication(BaseSettings):
 
 class HttpConfig(BaseSettings):
     """Http Configuration to pass to Http Transport init."""
-
     host: str = '127.0.0.1'
     port: int = 9001
     authentication: HTTPAuthentication = HTTPAuthentication()

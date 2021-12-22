@@ -1,23 +1,9 @@
-import json
-import cbor2
+from typing import Callable
 
-decode = {
-    'json': json.loads,
-    'cbor': cbor2.loads
-}
-
-encode = {
-    'json': json.dumps,
-    'cbor': cbor2.dumps
-}
+from pydantic import BaseModel
 
 
-def deserialize(data, encoding) -> dict:
-    message = decode[encoding](data)
-    if not isinstance(message, dict):
-        raise TypeError
-    return message
-
-
-def serialize(data, encoding):
-    return encode[encoding](data)
+class Serialization(BaseModel):
+    name: str
+    deserialize: Callable
+    serialize: Callable

@@ -16,9 +16,7 @@ def query_features():
                 "request": {
                     "action": "query",
                     "target": {
-                        "features": [
-                            "profiles"
-                        ]
+                        "features": []
                     }
                 }
             }
@@ -39,13 +37,6 @@ def expected_response():
             'openc2': {
                 'response': {
                     'status': 200,
-                    'status_text': 'OK - the Command has succeeded.',
-                    'results': {
-                        'profiles':
-                            ['slpf',
-                             'x-acme'
-                             ]
-                    }
                 }
             }
         }

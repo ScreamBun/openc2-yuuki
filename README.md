@@ -7,9 +7,7 @@ Yuuki is a lightweight OpenC2 framework that comes with example Consumers, all b
   * Test against your own OpenC2 Producer
 * Provide a library to
   * Ease implementation of Actuator Profiles
-  * Ease experimentation with different Transports, Serializations and Validators
-
-To jump right in, head over to the examples directory, or follow along below for a guided tour.
+  * Ease experimentation with different Transports and Serializations
 
 # Yuuki
 
@@ -52,17 +50,20 @@ OpenC2 Producer               ----------------- Yuuki (OpenC2 Consumer)---------
 
 # Installation
 
-Using Python3.7+, install with venv and pip:
+Using Python3.8+, install with venv and pip:
 ```sh
 mkdir yuuki
 cd yuuki
-python3.7 -m venv venv
+python3.8 -m venv venv
 source venv/bin/activate
 git clone THIS_REPO
 pip install ./openc2-yuuki
 ```
 
 # Example: HTTP
+
+| :warning:        | *The HTTP transport utilizes Flask's built-in server to be self-contained and simple. Flask's built-in server is not suitable for use in production. For more information see: https://flask.palletsprojects.com/en/2.0.x/server/#development-server*|
+|------------------|:-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
 
 Running HTTP locally shouldn't require any configuration. Run the HTTP consumer `http_example.py` in the *examples* directory with
 
@@ -274,8 +275,8 @@ Success! The Yuuki Consumer successfully received an OpenC2 Command, then publis
 
 # Example: OpenDXL
 
-| :warning:        | *Support for OpenDXL is experimental. This code may change when the transfer specification for OpenDXL is published.*|
-|------------------|:---------------------------------------------------------------------------------------------------------------------|
+| :warning:        | *Support for OpenDXL is experimental. This example may change when the transfer specification for OpenDXL is published.*|
+|------------------|:------------------------------------------------------------------------------------------------------------------------|
 
 
 

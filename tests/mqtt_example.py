@@ -1,9 +1,4 @@
-"""
-Example Implementation of an OpenC2 Consumer with MQTT and JSON.
-
-First a Command Handler is defined, then we instantiate
-a Consumer with it and our chosen Transport(MQTT) and Serialization(Json).
-"""
+import cbor2
 
 from yuuki import (
     Mqtt,
@@ -12,10 +7,14 @@ from yuuki import (
     MQTTAuthentication,
     BrokerConfig,
     Publication,
-    Subscription
+    Subscription,
+    Serialization
 )
-from command_handler import testcmdhandler
 
+
+serializations = [
+    Serialization(name='cbor', deserialize=cbor2.loads, serialize=cbor2.dumps)
+]
 
 mqtt_config = MqttConfig(
     broker=BrokerConfig(
@@ -43,5 +42,5 @@ mqtt_config = MqttConfig(
         )]
 )
 
-consumer = Mqtt(testcmdhandler, mqtt_config)
+consumer = Mqtt(rate_limit=60, versions=['1.0'], mqtt_config=mqtt_config, serializations=serializations)
 consumer.start()

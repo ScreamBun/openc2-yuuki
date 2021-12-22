@@ -1,10 +1,18 @@
+"""OpenC2 Types
+https://docs.oasis-open.org/openc2/oc2ls/v1.0/oc2ls-v1.0.html
+
+For validating and parsing OpenC2 Messages
+"""
 from enum import IntEnum
 from typing import Optional, Union, List, Dict, Any, Literal
 
-from pydantic import BaseModel, Extra, Field, validator, root_validator, ValidationError
+from pydantic import BaseModel, Extra, Field, validator, root_validator
 
 
 class StatusCode(IntEnum):
+    """
+    https://docs.oasis-open.org/openc2/oc2ls/v1.0/oc2ls-v1.0.html#3321-response-status-code
+    """
     PROCESSING = 102
     OK = 200
     BAD_REQUEST = 400
@@ -14,26 +22,6 @@ class StatusCode(IntEnum):
     INTERNAL_ERROR = 500
     NOT_IMPLEMENTED = 501
     SERVICE_UNAVAILABLE = 503
-
-    @property
-    def text(self):
-        mapping = {
-            102: 'Processing - an interim OpenC2Rsp used to inform the Producer that the Consumer has accepted the '
-                 'Command but has not yet completed it.',
-            200: 'OK - the Command has succeeded.',
-            400: 'Bad Request - the Consumer cannot process the Command due to something that is perceived to be a '
-                 'Producer error (e.g., malformed Command syntax).',
-            401: 'Unauthorized - the Command Message lacks valid authentication credentials for the target resource '
-                 'or authorization has been refused for the submitted credentials.',
-            403: 'Forbidden - the Consumer understood the Command but refuses to authorize it.',
-            404: 'Not Found - the Consumer has not found anything matching the Command.',
-            500: 'Internal Error - the Consumer encountered an unexpected condition that prevented it from performing '
-                 'the Command.',
-            501: 'Not Implemented - the Consumer does not support the functionality required to perform the Command.',
-            503: 'Service Unavailable - the Consumer is currently unable to perform the Command due to a temporary '
-                 'overloading or maintenance of the Consumer. '
-        }
-        return mapping[self.value]
 
     def __repr__(self):
         return str(self.value)
@@ -48,13 +36,12 @@ class OpenC2Ntf(BaseModel, extra=Extra.forbid, allow_mutation=False):
 
 
 class OpenC2RspFields(BaseModel, extra=Extra.forbid, allow_mutation=False):
+    """
+    https://docs.oasis-open.org/openc2/oc2ls/v1.0/oc2ls-v1.0.html#332-openc2-response
+    """
     status: StatusCode
     status_text: Optional[str]
     results: Optional[Dict[str, Any]]
-
-    @validator('status_text', always=True)
-    def set_status_text(cls, status_text, values):
-        return status_text or values['status'].text
 
 
 class OpenC2Rsp(BaseModel, extra=Extra.forbid, allow_mutation=False):
@@ -62,6 +49,9 @@ class OpenC2Rsp(BaseModel, extra=Extra.forbid, allow_mutation=False):
 
 
 class OpenC2CmdArgs(BaseModel, extra=Extra.allow, allow_mutation=False):
+    """
+    https://docs.oasis-open.org/openc2/oc2ls/v1.0/oc2ls-v1.0.html#3314-command-arguments
+    """
     start_time: Optional[int]
     stop_time: Optional[int]
     duration: Optional[int]
@@ -90,6 +80,9 @@ class OpenC2CmdArgs(BaseModel, extra=Extra.allow, allow_mutation=False):
 
 
 class OpenC2CmdFields(BaseModel, extra=Extra.forbid, allow_mutation=False):
+    """
+    https://docs.oasis-open.org/openc2/oc2ls/v1.0/oc2ls-v1.0.html#331-openc2-command
+    """
     action: str
     target: Dict[str, Any]
     args: Optional[OpenC2CmdArgs]
@@ -130,5 +123,8 @@ class OpenC2Body(BaseModel, extra=Extra.forbid, allow_mutation=False):
 
 
 class OpenC2Msg(BaseModel, extra=Extra.forbid, allow_mutation=False):
+    """
+    https://docs.oasis-open.org/openc2/oc2ls/v1.0/oc2ls-v1.0.html#32-message
+    """
     headers: OpenC2Headers
     body: OpenC2Body

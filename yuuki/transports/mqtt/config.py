@@ -1,6 +1,6 @@
 from typing import Optional, List
 
-from pydantic import BaseModel, BaseSettings, validator
+from pydantic import BaseSettings, validator
 
 
 class MQTTAuthorization(BaseSettings):

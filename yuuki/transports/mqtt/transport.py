@@ -1,21 +1,9 @@
-"""
-MQTT Transport
-
-Contains the transport class to instantiate, and its config to customize.
-
-The transport receives messages, then sends them on to a handler,
-and awaits a response to send back.
-
-Use as an argument to a Consumer constructor, eg:
-
-mqtt_config = MqttConfig(broker=...)
-mqtt_transport = Mqtt(mqtt_config)
-my_openc2_consumer = Consumer(transport=mqtt_transport, ...)
-my_openc2_consumer.start()
-
+"""MQTT Consumer
+https://docs.oasis-open.org/openc2/transf-mqtt/v1.0/transf-mqtt-v1.0.html
 """
 
 import logging
+from typing import List
 
 import paho.mqtt.client as mqtt
 from paho.mqtt.packettypes import PacketTypes
@@ -24,13 +12,22 @@ from paho.mqtt.properties import Properties
 from .config import MqttConfig
 from yuuki.consumer import Consumer
 from yuuki.openc2_types import StatusCode, OpenC2Headers, OpenC2RspFields
+from yuuki.actuator import Actuator
+from yuuki.serialization import Serialization
 
 
 class Mqtt(Consumer):
-    """Implements Transport base class for MQTT"""
+    """Implements transport functionality for MQTT"""
 
-    def __init__(self, cmd_handler, mqtt_config: MqttConfig):
-        super().__init__(cmd_handler, mqtt_config)
+    def __init__(
+            self,
+            rate_limit: int,
+            versions: List[str],
+            mqtt_config: MqttConfig,
+            actuators: List[Actuator] = None,
+            serializations: List[Serialization] = None
+    ):
+        super().__init__(rate_limit, versions, mqtt_config, actuators, serializations)
         self._client = mqtt.Client(client_id=self.config.broker.client_id, protocol=mqtt.MQTTv5)
         self._client.on_connect = self._on_connect
         self._client.on_message = self._on_message
@@ -56,9 +53,9 @@ class Mqtt(Consumer):
         except ValueError:
             encode = 'json'
             oc2_body = OpenC2RspFields(status=StatusCode.BAD_REQUEST, status_text='Malformed MQTT Properties')
-            response = self.make_response_msg(oc2_body, OpenC2Headers(), encode)
+            response = self.create_response_msg(oc2_body, OpenC2Headers(), encode)
         else:
-            response = self.get_response(msg.payload, encode)
+            response = self.process_command(msg.payload, encode)
 
         if response is not None:
             try:
@@ -68,25 +65,40 @@ class Mqtt(Consumer):
 
     @staticmethod
     def verify_properties(properties):
-        logging.debug(f'Message Properties: {properties}')
+        """
+        Verifies that the MQTT Properties for the received OpenC2 command are valid, and parses the message
+        serialization format from the properties
+
+        :param properties: MQTT Properties from received OpenC2 command.
+
+        :return: String specifying the serialization format of the received OpenC2 command.
+        """
+        logging.debug(f'Message Properties:\n{properties}')
         payload_fmt = getattr(properties, 'PayloadFormatIndicator', None)
         content_type = getattr(properties, 'ContentType', None)
         user_property = getattr(properties, 'UserProperty', None)
 
         if user_property:
             user_props = dict(user_property)
-            if "encoding" in user_props.keys():
-                encode = user_props["encoding"]
-                if (payload_fmt == 1 and content_type == "application/openc2" and
-                        user_property == [("msgType", "req"), ("encoding", encode)]):
+            if 'encoding' in user_props.keys():
+                encode = user_props['encoding']
+                if (payload_fmt == 1 and content_type == 'application/openc2' and
+                        user_property == [('msgType', 'req'), ('encoding', encode)]):
                     return encode
         raise ValueError('Invalid OpenC2 MQTT Properties')
 
     def publish_response_messages(self, response, encode):
+        """
+        Creates the appropriate MQTT Properties for an OpenC2 response, and publishes the response received from the
+        consumer along with those properties to all of the topics specified in the publications list
+
+        :param response: Serialized OpenC2 response received from the consumer.
+        :param encode: String specifying the serialization format of the response.
+        """
         openc2_properties = Properties(PacketTypes.PUBLISH)
         openc2_properties.PayloadFormatIndicator = 1
-        openc2_properties.ContentType = "application/openc2"
-        openc2_properties.UserProperty = [("msgType", "rsp"), ("encoding", encode)]
+        openc2_properties.ContentType = 'application/openc2'
+        openc2_properties.UserProperty = [('msgType', 'rsp'), ('encoding', encode)]
 
         for publication in self.config.publications:
             message_info = self._client.publish(publication.topic, payload=response,

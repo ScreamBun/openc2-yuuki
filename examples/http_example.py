@@ -1,12 +1,8 @@
 """
-Example Implementation of an OpenC2 Consumer with HTTP.
-
-First a Command Handler is defined, then we instantiate
-a Consumer with it and our chosen Transport (HTTP).
+Example Implementation of an OpenC2 HTTP Consumer
 """
 from yuuki import Http, HttpConfig
-from command_handler import cmdhandler
+from slpf import slpf
 
-
-consumer = Http(cmdhandler, HttpConfig())
+consumer = Http(rate_limit=60, versions=['1.0'], http_config=HttpConfig(), actuators=[slpf])
 consumer.start()

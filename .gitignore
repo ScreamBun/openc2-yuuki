@@ -1,3 +1,6 @@
-__pycache__
-*.egg*
-yuuki_config.json
+yuuki.egg-info/
+__pycache__/
+build/
+venv/
+.DS_Store
+.idea/

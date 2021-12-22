@@ -1,8 +1,5 @@
 """
-Example Implementation of an OpenC2 Consumer with MQTT.
-
-First a Command Handler is defined, then we instantiate
-a Consumer with it and our chosen Transport (MQTT).
+Example Implementation of an OpenC2 MQTT Consumer
 """
 from yuuki import (
     Mqtt,
@@ -13,7 +10,7 @@ from yuuki import (
     Publication,
     Subscription
 )
-from command_handler import cmdhandler
+from slpf import slpf
 
 
 mqtt_config = MqttConfig(
@@ -42,5 +39,5 @@ mqtt_config = MqttConfig(
         )]
 )
 
-consumer = Mqtt(cmdhandler, mqtt_config)
+consumer = Mqtt(rate_limit=60, versions=['1.0'], mqtt_config=mqtt_config, actuators=[slpf])
 consumer.start()

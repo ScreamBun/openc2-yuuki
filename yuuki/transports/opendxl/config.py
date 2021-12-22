@@ -1,4 +1,4 @@
-from pydantic import BaseModel, BaseSettings
+from pydantic import BaseSettings
 
 
 class OpenDXLConfig(BaseSettings):

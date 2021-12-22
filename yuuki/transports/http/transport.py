@@ -1,22 +1,31 @@
-"""HTTP Transport
-
-This transport receives messages, then sends them on to a handler,
-and awaits a response to send back.
-
+"""HTTP Consumer
+https://docs.oasis-open.org/openc2/open-impl-https/v1.0/open-impl-https-v1.0.html
 """
+import logging
+from typing import List
+
 from flask import Flask, request, make_response
 from werkzeug.http import parse_options_header
 
 from .config import HttpConfig
 from yuuki.consumer import Consumer
 from yuuki.openc2_types import StatusCode, OpenC2Headers, OpenC2RspFields
+from yuuki.actuator import Actuator
+from yuuki.serialization import Serialization
 
 
 class Http(Consumer):
-    """Implements Transport class for HTTP"""
+    """Implements transport functionality for HTTP"""
 
-    def __init__(self, cmd_handler, http_config: HttpConfig):
-        super().__init__(cmd_handler, http_config)
+    def __init__(
+            self,
+            rate_limit: int,
+            versions: List[str],
+            http_config: HttpConfig,
+            actuators: List[Actuator] = None,
+            serializations: List[Serialization] = None
+    ):
+        super().__init__(rate_limit, versions, http_config, actuators, serializations)
         self.app = Flask('yuuki')
         self.setup(self.app)
 
@@ -28,9 +37,9 @@ class Http(Consumer):
             except ValueError:
                 encode = 'json'
                 oc2_body = OpenC2RspFields(status=StatusCode.BAD_REQUEST, status_text='Malformed HTTP Request')
-                response = self.make_response_msg(oc2_body, OpenC2Headers(), encode)
+                response = self.create_response_msg(oc2_body, OpenC2Headers(), encode)
             else:
-                response = self.get_response(request.get_data(), encode)
+                response = self.process_command(request.get_data(), encode)
 
             if response is not None:
                 http_response = make_response(response)
@@ -54,15 +63,16 @@ class Http(Consumer):
         Verifies that the HTTP headers for the received OpenC2 command are valid, and parses the message serialization
         format from the headers
 
-        :param headers: HTTP headers from received OpenC2 command
+        :param headers: HTTP headers from received OpenC2 Command.
 
-        :return: string specifying the serialization format of the received OpenC2 command
+        :return: String specifying the serialization format of the received OpenC2 Command.
         """
+        logging.debug(f'Message Headers:\n{headers}')
         if 'Host' and 'Content-type' in headers:
             try:
                 encode = parse_options_header(headers['Content-type'])[0].split('/')[1].split('+')[1]
             except IndexError as error:
                 raise ValueError('Invalid OpenC2 HTTP Headers') from error
-            if headers['Content-type'] == f"application/openc2-cmd+{encode};version=1.0":
+            if headers['Content-type'] == f'application/openc2-cmd+{encode};version=1.0':
                 return encode
         raise ValueError('Invalid OpenC2 HTTP Headers')
