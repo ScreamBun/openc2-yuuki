@@ -1,8 +1,8 @@
 """
 Example Implementation of an OpenC2 HTTP Consumer
 """
-from yuuki import Http, HttpConfig
-from slpf import slpf
+from yuuki import HttpTransport, HttpConfig
+from consumer_example import consumer
 
-consumer = Http(rate_limit=60, versions=['1.0'], http_config=HttpConfig(), actuators=[slpf])
-consumer.start()
+http_consumer = HttpTransport(consumer=consumer, config=HttpConfig())
+http_consumer.start()

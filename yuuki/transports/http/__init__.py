@@ -1,2 +1,2 @@
-from .transport import Http
-from .config import HttpConfig, HTTPAuthentication
+from .transport import HttpTransport
+from .config import HttpConfig

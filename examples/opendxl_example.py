@@ -1,5 +1,14 @@
-from yuuki import OpenDxl, OpenDXLConfig
-from slpf import slpf
+import argparse
 
-consumer = OpenDxl(rate_limit=60, versions=['1.0'], opendxl_config=OpenDXLConfig(), actuators=[slpf])
+from yuuki import OpenDxlTransport, OpenDxlConfig
+
+from consumer_example import consumer
+
+
+parser = argparse.ArgumentParser(description="OpenDXL Consumer")
+parser.add_argument("config_file", help="OpenDXL configuration file")
+args = parser.parse_args()
+
+
+consumer = OpenDxlTransport(consumer=consumer, config=OpenDxlConfig(config_file=args.config_file))
 consumer.start()

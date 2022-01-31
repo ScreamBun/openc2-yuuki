@@ -1,7 +1,9 @@
 """OpenDXL Consumer
 """
 
-from typing import List
+import signal
+import sys
+import threading
 
 from dxlclient.client import DxlClient
 from dxlclient.client_config import DxlClientConfig
@@ -11,9 +13,23 @@ from dxlclient.service import ServiceRegistrationInfo
 
 from yuuki.consumer import Consumer
 from yuuki.openc2_types import OpenC2Headers, OpenC2RspFields, StatusCode
-from yuuki.actuator import Actuator
-from yuuki.serialization import Serialization
-from .config import OpenDXLConfig
+from .config import OpenDxlConfig
+
+
+run = threading.Event()
+waiting = False
+
+
+def handler(signum, frame):
+    if waiting:
+        run.set()
+    else:
+        sys.exit()
+
+
+signal.signal(signal.SIGTERM, handler)
+signal.signal(signal.SIGINT, handler)
+signal.signal(signal.SIGHUP, handler)
 
 
 class OC2EventCallback(EventCallback):
@@ -68,27 +84,23 @@ class OC2RequestCallback(RequestCallback):
         self.client.send_response(opendxl_response)
 
 
-class OpenDxl(Consumer):
+class OpenDxlTransport:
     """Implements transport functionality for OpenDXL"""
 
-    def __init__(
-            self,
-            rate_limit: int,
-            versions: List[str],
-            opendxl_config: OpenDXLConfig,
-            actuators: List[Actuator] = None,
-            serializations: List[Serialization] = None
-    ):
-        super().__init__(rate_limit, versions, opendxl_config, actuators, serializations)
+    def __init__(self, consumer: Consumer, config: OpenDxlConfig):
+        self.consumer = consumer
+        self.config = config
         self.dxl_client_config = DxlClientConfig.create_dxl_config_from_file(self.config.config_file)
 
     def start(self):
         with DxlClient(self.dxl_client_config) as client:
             client.connect()
-            client.add_event_callback(self.config.event_request_topic, OC2EventCallback(client, self.config, self))
+            client.add_event_callback(self.config.event_request_topic,
+                                      OC2EventCallback(client, self.config, self.consumer))
             info = ServiceRegistrationInfo(client, "OC2Service")
-            info.add_topic(self.config.service_topic, OC2RequestCallback(client, self))
+            info.add_topic(self.config.service_topic, OC2RequestCallback(client, self.consumer))
             client.register_service_sync(info, 10)
 
-            while True:
-                pass
+            global waiting
+            waiting = True
+            run.wait()

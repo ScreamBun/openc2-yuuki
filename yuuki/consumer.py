@@ -4,7 +4,6 @@ https://docs.oasis-open.org/openc2/oc2ls/v1.0/oc2ls-v1.0.html#54-conformance-cla
 import json
 import logging
 from time import time
-from abc import ABC, abstractmethod
 from pprint import pformat
 from concurrent.futures import ThreadPoolExecutor
 from functools import partial
@@ -18,7 +17,7 @@ from .actuator import Actuator
 from .serialization import Serialization
 
 
-class Consumer(ABC):
+class Consumer:
     """Provides the ability to process OpenC2 Commands and issue OpenC2 Responses
     The base Consumer supports the 'query features' OpenC2 Command and JSON serialization.
     OpenC2 Message transfer functionality is achieved by inheriting from this class and implementing the capability to
@@ -29,14 +28,12 @@ class Consumer(ABC):
             self,
             rate_limit: int,
             versions: List[str],
-            transport_config,
             actuators: List[Actuator] = None,
             serializations: List[Serialization] = None
     ):
         """
         :param rate_limit: Maximum number of Commands per minute supported by design or policy.
         :param versions: List of OpenC2 language versions supported.
-        :param transport_config: Transport-specific configuration.
         :param actuators: List of actuators to be added to the Consumer.
         :param serializations: List of serializations to be added to the Consumer.
         """
@@ -54,7 +51,6 @@ class Consumer(ABC):
         if actuators is not None:
             for actuator in actuators:
                 self.add_actuator_profile(actuator)
-        self.config = transport_config
         self.executor = ThreadPoolExecutor()
         print(r'''
         _____.___.            __   .__ 
@@ -64,11 +60,6 @@ class Consumer(ABC):
          / ______|____/|____/|__|_ \__|
          \/                       \/   
         ''')
-
-    @abstractmethod
-    def start(self):
-        """Runs the consumer after configuration steps are complete."""
-        raise NotImplementedError
 
     def process_command(self, raw_data, encode: str) -> Union[str, bytes, None]:
         """Processes commands received from transport then returns a response for the transport to send.

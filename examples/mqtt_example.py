@@ -1,8 +1,10 @@
 """
 Example Implementation of an OpenC2 MQTT Consumer
 """
+import argparse
+
 from yuuki import (
-    Mqtt,
+    MqttTransport,
     MqttConfig,
     MQTTAuthorization,
     MQTTAuthentication,
@@ -10,13 +12,21 @@ from yuuki import (
     Publication,
     Subscription
 )
-from slpf import slpf
 
+from consumer_example import consumer
+
+parser = argparse.ArgumentParser(description="MQTT Consumer")
+parser.add_argument("--host", help="MQTT Broker host")
+parser.add_argument("--port", type=int, help="MQTT Broker port")
+args = parser.parse_args()
+
+host = args.host if args.host is not None else "127.0.0.1"
+port = args.port if args.port is not None else 1883
 
 mqtt_config = MqttConfig(
     broker=BrokerConfig(
-        host='test.mosquitto.org',
-        port=1883,
+        host=host,
+        port=port,
         client_id='',
         keep_alive=300,
         authorization=MQTTAuthorization(
@@ -39,5 +49,5 @@ mqtt_config = MqttConfig(
         )]
 )
 
-consumer = Mqtt(rate_limit=60, versions=['1.0'], mqtt_config=mqtt_config, actuators=[slpf])
-consumer.start()
+mqtt_consumer = MqttTransport(consumer=consumer, config=mqtt_config)
+mqtt_consumer.start()

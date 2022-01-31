@@ -3,7 +3,6 @@ https://docs.oasis-open.org/openc2/transf-mqtt/v1.0/transf-mqtt-v1.0.html
 """
 
 import logging
-from typing import List
 
 import paho.mqtt.client as mqtt
 from paho.mqtt.packettypes import PacketTypes
@@ -12,22 +11,14 @@ from paho.mqtt.properties import Properties
 from .config import MqttConfig
 from yuuki.consumer import Consumer
 from yuuki.openc2_types import StatusCode, OpenC2Headers, OpenC2RspFields
-from yuuki.actuator import Actuator
-from yuuki.serialization import Serialization
 
 
-class Mqtt(Consumer):
+class MqttTransport:
     """Implements transport functionality for MQTT"""
 
-    def __init__(
-            self,
-            rate_limit: int,
-            versions: List[str],
-            mqtt_config: MqttConfig,
-            actuators: List[Actuator] = None,
-            serializations: List[Serialization] = None
-    ):
-        super().__init__(rate_limit, versions, mqtt_config, actuators, serializations)
+    def __init__(self, consumer: Consumer, config: MqttConfig):
+        self.consumer = consumer
+        self.config = config
         self._client = mqtt.Client(client_id=self.config.broker.client_id, protocol=mqtt.MQTTv5)
         self._client.on_connect = self._on_connect
         self._client.on_message = self._on_message
@@ -53,9 +44,9 @@ class Mqtt(Consumer):
         except ValueError:
             encode = 'json'
             oc2_body = OpenC2RspFields(status=StatusCode.BAD_REQUEST, status_text='Malformed MQTT Properties')
-            response = self.create_response_msg(oc2_body, OpenC2Headers(), encode)
+            response = self.consumer.create_response_msg(oc2_body, OpenC2Headers(), encode)
         else:
-            response = self.process_command(msg.payload, encode)
+            response = self.consumer.process_command(msg.payload, encode)
 
         if response is not None:
             try:

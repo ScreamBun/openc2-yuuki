@@ -1,3 +1,5 @@
-from .http import Http, HttpConfig, HTTPAuthentication
-from .mqtt import Mqtt, MqttConfig, MQTTAuthorization, MQTTAuthentication, BrokerConfig, Subscription, Publication
-from .opendxl import OpenDxl, OpenDXLConfig
+from .http import HttpTransport, HttpConfig
+from .mqtt import (
+    MqttTransport, MqttConfig, MQTTAuthorization, MQTTAuthentication, BrokerConfig, Subscription, Publication
+)
+from .opendxl import OpenDxlTransport, OpenDxlConfig
