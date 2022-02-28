@@ -12,7 +12,7 @@ from dxlclient.message import Event, Request, Response
 from dxlclient.service import ServiceRegistrationInfo
 
 from yuuki.consumer import Consumer
-from yuuki.openc2_types import OpenC2Headers, OpenC2RspFields, StatusCode
+from yuuki.openc2_types import StatusCode, OpenC2RspFields
 from .config import OpenDxlConfig
 
 
@@ -29,7 +29,6 @@ def handler(signum, frame):
 
 signal.signal(signal.SIGTERM, handler)
 signal.signal(signal.SIGINT, handler)
-signal.signal(signal.SIGHUP, handler)
 
 
 class OC2EventCallback(EventCallback):
@@ -45,7 +44,7 @@ class OC2EventCallback(EventCallback):
         if (event.other_fields.get('msgType') != 'req' or
                 event.other_fields.get('contentType') != 'application/openc2'):
             oc2_body = OpenC2RspFields(status=StatusCode.BAD_REQUEST, status_text='Malformed Event Fields')
-            response = self.consumer.create_response_msg(oc2_body, OpenC2Headers(), encode)
+            response = self.consumer.create_response_msg(oc2_body, encode)
         else:
             response = self.consumer.process_command(event.payload, encode)
 
@@ -70,7 +69,7 @@ class OC2RequestCallback(RequestCallback):
         if (request.other_fields.get('msgType') != 'req' or
                 request.other_fields.get('contentType') != 'application/openc2'):
             oc2_body = OpenC2RspFields(status=StatusCode.BAD_REQUEST, status_text='Malformed Request Fields')
-            openc2_response = self.consumer.create_response_msg(oc2_body, OpenC2Headers(), encode)
+            openc2_response = self.consumer.create_response_msg(oc2_body, encode)
         else:
             openc2_response = self.consumer.process_command(request.payload, encode)
         opendxl_response = Response(request)

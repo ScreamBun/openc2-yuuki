@@ -1,6 +1,6 @@
 import argparse
 
-from yuuki import OpenDxlTransport, OpenDxlConfig
+from yuuki.transports import OpenDxlTransport, OpenDxlConfig
 
 from consumer_example import consumer
 

@@ -1,8 +1,9 @@
 import time
+import uuid
 
 query_features = {
     "headers": {
-        "request_id": "abc123",
+        "request_id": str(uuid.uuid4()),
         "created": round(time.time() * 1000),
         "from": "Producer1"
     },

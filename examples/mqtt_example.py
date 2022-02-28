@@ -3,7 +3,7 @@ Example Implementation of an OpenC2 MQTT Consumer
 """
 import argparse
 
-from yuuki import (
+from yuuki.transports import (
     MqttTransport,
     MqttConfig,
     MQTTAuthorization,
@@ -31,8 +31,8 @@ mqtt_config = MqttConfig(
         keep_alive=300,
         authorization=MQTTAuthorization(
             enable=True,
-            username='plug',
-            password='fest'),
+            username=None,
+            password=None),
         authentication=MQTTAuthentication(
             enable=False,
             certfile=None,

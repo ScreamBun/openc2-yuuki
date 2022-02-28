@@ -18,10 +18,8 @@ from .serialization import Serialization
 
 
 class Consumer:
-    """Provides the ability to process OpenC2 Commands and issue OpenC2 Responses
+    """Processes OpenC2 Commands and issues OpenC2 Responses
     The base Consumer supports the 'query features' OpenC2 Command and JSON serialization.
-    OpenC2 Message transfer functionality is achieved by inheriting from this class and implementing the capability to
-    send a receive messages using a particular transfer protocol in the child class.
     """
 
     def __init__(
@@ -32,7 +30,7 @@ class Consumer:
             serializations: List[Serialization] = None
     ):
         """
-        :param rate_limit: Maximum number of Commands per minute supported by design or policy.
+        :param rate_limit: Maximum number of requests per minute supported by design or policy.
         :param versions: List of OpenC2 language versions supported.
         :param actuators: List of actuators to be added to the Consumer.
         :param serializations: List of serializations to be added to the Consumer.
@@ -61,16 +59,16 @@ class Consumer:
          \/                       \/   
         ''')
 
-    def process_command(self, raw_data, encode: str) -> Union[str, bytes, None]:
-        """Processes commands received from transport then returns a response for the transport to send.
+    def process_command(self, command, encode: str) -> Union[str, bytes, None]:
+        """Processes an OpenC2 command and return an OpenC2 response.
 
-        :param raw_data: The OpenC2 command as received by the transport.
+        :param command: The OpenC2 command.
         :param encode: String specifying the serialization format for the command/response.
 
         :return: Serialized OpenC2 response, or None if no response was requested by the command.
         """
         try:
-            message = self.serializations[encode].deserialize(raw_data)
+            message = self.serializations[encode].deserialize(command)
         except KeyError:
             openc2_rsp = OpenC2RspFields(status=StatusCode.BAD_REQUEST,
                                          status_text='Unsupported serialization protocol')
@@ -85,12 +83,13 @@ class Consumer:
 
         try:
             openc2_msg = OpenC2Msg(**message)
-        except ValidationError:
+        except ValidationError as e:
+            logging.error(e)
             openc2_rsp = OpenC2RspFields(status=StatusCode.BAD_REQUEST, status_text='Malformed OpenC2 message')
             return self.create_response_msg(openc2_rsp, encode=encode)
 
         try:
-            actuator_callable = self.get_actuator_callable(openc2_msg)
+            actuator_callable = self._get_actuator_callable(openc2_msg)
         except TypeError:
             openc2_rsp = OpenC2RspFields(status=StatusCode.NOT_FOUND, status_text='No matching actuator found')
             return self.create_response_msg(openc2_rsp, headers=openc2_msg.headers, encode=encode)
@@ -128,10 +127,10 @@ class Consumer:
             openc2_rsp = OpenC2RspFields(status=StatusCode.INTERNAL_ERROR, status_text='Serialization failed')
             return self.create_response_msg(openc2_rsp, headers=openc2_msg.headers, encode='json')
 
-    def create_response_msg(self, response_body: OpenC2RspFields, headers: OpenC2Headers = OpenC2Headers(),
-                            encode: str = None) -> Union[str, bytes]:
+    def create_response_msg(self, response_body: OpenC2RspFields, encode: str,
+                            headers: OpenC2Headers = None) -> Union[str, bytes]:
         """
-        Creates and serializes the OpenC2 response to be returned to the transport
+        Creates and serializes an OpenC2 response.
 
         :param response_body: Information to populate OpenC2 response fields.
         :param headers: Information to populate OpenC2 response headers.
@@ -139,16 +138,19 @@ class Consumer:
 
         :return: Serialized OpenC2 Response
         """
-        message = OpenC2Msg(headers=OpenC2Headers(request_id=headers.request_id,
-                                                  from_='yuuki', to=headers.from_,
-                                                  created=round(time() * 1000)),
-                            body=OpenC2Body(openc2=OpenC2Rsp(response=response_body)))
-        response = message.dict(by_alias=True, exclude_unset=True)
+        if headers is None:
+            headers = OpenC2Headers(from_='yuuki')
+        else:
+            headers = OpenC2Headers(request_id=headers.request_id,
+                                    from_='yuuki', to=headers.from_,
+                                    created=round(time() * 1000))
+        message = OpenC2Msg(headers=headers, body=OpenC2Body(openc2=OpenC2Rsp(response=response_body)))
+        response = message.dict(by_alias=True, exclude_unset=True, exclude_none=True)
         logging.info(f'Response:\n{pformat(response)}')
         return self.serializations[encode].serialize(response)
 
-    def get_actuator_callable(self, oc2_msg: OpenC2Msg) -> Callable[[], OpenC2RspFields]:
-        """Identifies the appropriate function to perform the received OpenC2 command
+    def _get_actuator_callable(self, oc2_msg: OpenC2Msg) -> Callable[[], OpenC2RspFields]:
+        """Identifies the appropriate function to perform the received OpenC2 command.
 
         :param oc2_msg: The OpenC2 message received by the consumer.
 
@@ -207,14 +209,17 @@ class Consumer:
             return OpenC2RspFields(status=StatusCode.OK)
 
     def add_actuator_profile(self, actuator: Actuator) -> None:
-        """Adds the actuator's functions to the consumer and adds the actuator's nsid to the list of supported profiles
+        """Adds the actuator's functions to the consumer and adds the actuator's namespace identifier (nsid) to the
+        list of supported profiles
 
         :param actuator: The actuator whose functions will be added to the consumer.
         """
-        if actuator.nsid not in self.profiles:
+        if actuator.nsid in self.profiles:
+            raise ValueError('Actuator with the same nsid already exists')
+        else:
             self.profiles.append(actuator.nsid)
-        self.pairs.update(actuator.pairs)
-        self.dispatch.update(actuator.dispatch)
+            self.pairs.update(actuator.pairs)
+            self.dispatch.update(actuator.dispatch)
 
     def add_serialization(self, serialization: Serialization) -> None:
         """Adds the serialization to the Consumer, enabling it to serialize and deserialize messages using the

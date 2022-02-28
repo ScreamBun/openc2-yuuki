@@ -9,7 +9,7 @@ from waitress import serve
 
 from .config import HttpConfig
 from yuuki.consumer import Consumer
-from yuuki.openc2_types import StatusCode, OpenC2Headers, OpenC2RspFields
+from yuuki.openc2_types import StatusCode, OpenC2RspFields
 
 
 class HttpTransport:
@@ -26,8 +26,8 @@ class HttpTransport:
             encode = self.verify_headers(request.headers)
         except ValueError:
             encode = 'json'
-            oc2_body = OpenC2RspFields(status=StatusCode.BAD_REQUEST, status_text='Malformed HTTP Request')
-            response = self.consumer.create_response_msg(oc2_body, OpenC2Headers(), encode)
+            oc2_body = OpenC2RspFields(status=StatusCode.BAD_REQUEST, status_text='Malformed HTTP Headers')
+            response = self.consumer.create_response_msg(oc2_body, encode)
         else:
             response = self.consumer.process_command(request.get_data(), encode)
 

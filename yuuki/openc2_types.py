@@ -27,15 +27,15 @@ class StatusCode(IntEnum):
         return str(self.value)
 
 
-class OpenC2NtfFields(BaseModel, extra=Extra.forbid, allow_mutation=False):
+class OpenC2NtfFields(BaseModel, extra=Extra.forbid):
     pass
 
 
-class OpenC2Ntf(BaseModel, extra=Extra.forbid, allow_mutation=False):
+class OpenC2Ntf(BaseModel, extra=Extra.forbid):
     notification: OpenC2NtfFields
 
 
-class OpenC2RspFields(BaseModel, extra=Extra.forbid, allow_mutation=False):
+class OpenC2RspFields(BaseModel, extra=Extra.forbid):
     """
     https://docs.oasis-open.org/openc2/oc2ls/v1.0/oc2ls-v1.0.html#332-openc2-response
     """
@@ -44,11 +44,11 @@ class OpenC2RspFields(BaseModel, extra=Extra.forbid, allow_mutation=False):
     results: Optional[Dict[str, Any]]
 
 
-class OpenC2Rsp(BaseModel, extra=Extra.forbid, allow_mutation=False):
+class OpenC2Rsp(BaseModel, extra=Extra.forbid):
     response: OpenC2RspFields
 
 
-class OpenC2CmdArgs(BaseModel, extra=Extra.allow, allow_mutation=False):
+class OpenC2CmdArgs(BaseModel, extra=Extra.allow):
     """
     https://docs.oasis-open.org/openc2/oc2ls/v1.0/oc2ls-v1.0.html#3314-command-arguments
     """
@@ -79,7 +79,7 @@ class OpenC2CmdArgs(BaseModel, extra=Extra.allow, allow_mutation=False):
         return args
 
 
-class OpenC2CmdFields(BaseModel, extra=Extra.forbid, allow_mutation=False):
+class OpenC2CmdFields(BaseModel, extra=Extra.forbid):
     """
     https://docs.oasis-open.org/openc2/oc2ls/v1.0/oc2ls-v1.0.html#331-openc2-command
     """
@@ -107,24 +107,36 @@ class OpenC2CmdFields(BaseModel, extra=Extra.forbid, allow_mutation=False):
             return next(iter(self.actuator))
 
 
-class OpenC2Cmd(BaseModel, extra=Extra.forbid, allow_mutation=False):
+class OpenC2Cmd(BaseModel, extra=Extra.forbid):
     request: OpenC2CmdFields
 
 
-class OpenC2Headers(BaseModel, extra=Extra.forbid, allow_mutation=False, allow_population_by_field_name=True):
+class OpenC2Headers(BaseModel, extra=Extra.forbid, allow_population_by_field_name=True):
     request_id: Optional[str]
     created: Optional[int]
     from_: Optional[str] = Field(alias='from')
     to: Optional[Union[str, List[str]]]
 
 
-class OpenC2Body(BaseModel, extra=Extra.forbid, allow_mutation=False):
+class OpenC2Body(BaseModel, extra=Extra.forbid):
     openc2: Union[OpenC2Cmd, OpenC2Rsp, OpenC2Ntf]
 
 
-class OpenC2Msg(BaseModel, extra=Extra.forbid, allow_mutation=False):
+class OpenC2Msg(BaseModel, extra=Extra.forbid):
     """
     https://docs.oasis-open.org/openc2/oc2ls/v1.0/oc2ls-v1.0.html#32-message
     """
-    headers: OpenC2Headers
+    headers: Optional[OpenC2Headers]
     body: OpenC2Body
+
+    @root_validator
+    def set_command_id(cls, fields):
+        """
+        See 'Usage Requirements' under:
+        https://docs.oasis-open.org/openc2/oc2ls/v1.0/oc2ls-v1.0.html#331-openc2-command
+        """
+        if isinstance(fields['body'].openc2, OpenC2Cmd):
+            if fields['headers'] is not None and fields['headers'].request_id is not None:
+                if fields['body'].openc2.request.command_id is None:
+                    fields['body'].openc2.request.command_id = fields['headers'].request_id
+        return fields

@@ -10,7 +10,7 @@ from paho.mqtt.properties import Properties
 
 from .config import MqttConfig
 from yuuki.consumer import Consumer
-from yuuki.openc2_types import StatusCode, OpenC2Headers, OpenC2RspFields
+from yuuki.openc2_types import StatusCode, OpenC2RspFields
 
 
 class MqttTransport:
@@ -44,7 +44,7 @@ class MqttTransport:
         except ValueError:
             encode = 'json'
             oc2_body = OpenC2RspFields(status=StatusCode.BAD_REQUEST, status_text='Malformed MQTT Properties')
-            response = self.consumer.create_response_msg(oc2_body, OpenC2Headers(), encode)
+            response = self.consumer.create_response_msg(oc2_body, encode)
         else:
             response = self.consumer.process_command(msg.payload, encode)
 
