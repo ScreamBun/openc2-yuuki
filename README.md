@@ -11,7 +11,7 @@ Yuuki is a framework for creating OpenC2 Consumers. It serves a few purposes:
 
 ## Consumers
 
-A Consumer is initialized with a rate limit and a list of OpenC2 Language versions that it supports, as well as an optional list of [Actuators](#Actuators) and an optional list of [Serializations](#Serializations).
+A Consumer is initialized with a rate limit and a list of OpenC2 Language versions that it supports, as well as an optional list of [Actuators](#actuators) and an optional list of [Serializations](#serializations).
 
 ```python
 from yuuki import Consumer
