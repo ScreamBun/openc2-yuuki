@@ -28,13 +28,13 @@ class BrokerConfig(BaseSettings):
 class Subscription(BaseSettings):
     """Topic Filter and QoS for one subscription.
 
-    Create one of these for each command source.
+    Create one of these for each Command source.
     """
     topic: str = 'oc2/cmd'
     qos: int = 1
 
     @validator('qos')
-    def validate_target_length(cls, qos):
+    def validate_qos(cls, qos):
         if qos not in {1, 2}:
             raise ValueError('QoS level must be 1 or 2')
         return qos
@@ -43,13 +43,13 @@ class Subscription(BaseSettings):
 class Publication(BaseSettings):
     """Topic Name and QoS for one publish destination.
 
-    Create one of these for each response destination.
+    Create one of these for each Response destination.
     """
     topic: str = 'oc2/rsp'
     qos: int = 1
 
     @validator('qos')
-    def validate_target_length(cls, qos):
+    def validate_qos(cls, qos):
         if qos not in {1, 2}:
             raise ValueError('QoS level must be 1 or 2')
         return qos
@@ -61,8 +61,8 @@ class MqttConfig(BaseSettings):
     Accept the defaults or customize as necessary.
 
     broker: socket, client_id, authorization, authentication
-    subscriptions: list of topic/qos objects for commands
-    publications: list of topic/qos objects for responses
+    subscriptions: list of topic/qos objects for Commands
+    publications: list of topic/qos objects for Responses
     """
     broker: BrokerConfig = BrokerConfig()
     subscriptions: List[Subscription] = [Subscription()]

@@ -47,7 +47,7 @@ class HttpTransport:
     @staticmethod
     def verify_headers(headers):
         """
-        Verifies that the HTTP headers for the received OpenC2 command are valid, and parses the message serialization
+        Verifies that the HTTP headers for the received OpenC2 Command are valid, and parses the message serialization
         format from the headers
 
         :param headers: HTTP headers from received OpenC2 Command.

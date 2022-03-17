@@ -57,12 +57,12 @@ class MqttTransport:
     @staticmethod
     def verify_properties(properties):
         """
-        Verifies that the MQTT Properties for the received OpenC2 command are valid, and parses the message
+        Verifies that the MQTT Properties for the received OpenC2 Command are valid, and parses the message
         serialization format from the properties
 
-        :param properties: MQTT Properties from received OpenC2 command.
+        :param properties: MQTT Properties from received OpenC2 Command.
 
-        :return: String specifying the serialization format of the received OpenC2 command.
+        :return: String specifying the serialization format of the received OpenC2 Command.
         """
         logging.debug(f'Message Properties:\n{properties}')
         payload_fmt = getattr(properties, 'PayloadFormatIndicator', None)
@@ -80,11 +80,11 @@ class MqttTransport:
 
     def publish_response_messages(self, response, encode):
         """
-        Creates the appropriate MQTT Properties for an OpenC2 response, and publishes the response received from the
-        consumer along with those properties to all of the topics specified in the publications list
+        Creates the appropriate MQTT Properties for an OpenC2 Response, and publishes the Response received from the
+        Consumer along with those properties to all of the topics specified in the publications list
 
-        :param response: Serialized OpenC2 response received from the consumer.
-        :param encode: String specifying the serialization format of the response.
+        :param response: Serialized OpenC2 Response received from the Consumer.
+        :param encode: String specifying the serialization format of the Response.
         """
         openc2_properties = Properties(PacketTypes.PUBLISH)
         openc2_properties.PayloadFormatIndicator = 1

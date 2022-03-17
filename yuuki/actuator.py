@@ -18,11 +18,11 @@ class Actuator:
         self.nsid: str = nsid
 
     def pair(self, action: str, target: str, implemented: bool = True) -> Callable:
-        """Decorator for actuator functions.
+        """Decorator for Actuator functions.
 
-        :param action: Name of the action to be performed by the function
-        :param target: Name of the target of the action
-        :param implemented: Indicates whether the command specified in the Actuator Profile is supported or not
+        :param action: Name of the Action to be performed by the function
+        :param target: Name of the Target of the Action
+        :param implemented: Indicates whether the Command specified in the Actuator profile is supported or not
 
         Example:
 
@@ -45,13 +45,13 @@ class Actuator:
         return decorator
 
     def register_pair(self, function: OpenC2Function, action: str, target: str, implemented: bool = True) -> None:
-        """Adds function to the dispatch dictionary and the dictionary of action-target pairs.
+        """Adds function to the dispatch dictionary and the dictionary of Action-Target pairs.
 
-        :param function: The function to be called when the consumer receives a command matching the corresponding
-            action, target, and nsid
-        :param action: Name of the action to be performed by the function
-        :param target: Name of the target of the action
-        :param implemented: Indicates whether the command specified in the Actuator Profile is supported or not
+        :param function: The function to be called when the Consumer receives a Command matching the corresponding
+            Action, Target, and nsid
+        :param action: Name of the Action to be performed by the function
+        :param target: Name of the Target of the Action
+        :param implemented: Indicates whether the Command specified in the Actuator profile is supported or not
         """
         if implemented:
             self.dispatch[action][target][self.nsid] = function

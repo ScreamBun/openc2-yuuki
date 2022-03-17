@@ -32,7 +32,7 @@ class Consumer:
         """
         :param rate_limit: Maximum number of requests per minute supported by design or policy.
         :param versions: List of OpenC2 language versions supported.
-        :param actuators: List of actuators to be added to the Consumer.
+        :param actuators: List of Actuators to be added to the Consumer.
         :param serializations: List of serializations to be added to the Consumer.
         """
         self.dispatch: DefaultDict[str: DefaultDict[str: Dict[str: Callable]]] = defaultdict(lambda: defaultdict(dict))
@@ -60,12 +60,12 @@ class Consumer:
         ''')
 
     def process_command(self, command, encode: str) -> Union[str, bytes, None]:
-        """Processes an OpenC2 command and return an OpenC2 response.
+        """Processes an OpenC2 Command and return an OpenC2 Response.
 
-        :param command: The OpenC2 command.
-        :param encode: String specifying the serialization format for the command/response.
+        :param command: The OpenC2 Command.
+        :param encode: String specifying the serialization format for the Command/Response.
 
-        :return: Serialized OpenC2 response, or None if no response was requested by the command.
+        :return: Serialized OpenC2 Response, or None if no Response was requested by the Command.
         """
         try:
             message = self.serializations[encode].deserialize(command)
@@ -91,7 +91,7 @@ class Consumer:
         try:
             actuator_callable = self._get_actuator_callable(openc2_msg)
         except TypeError:
-            openc2_rsp = OpenC2RspFields(status=StatusCode.NOT_FOUND, status_text='No matching actuator found')
+            openc2_rsp = OpenC2RspFields(status=StatusCode.NOT_FOUND, status_text='No matching Actuator found')
             return self.create_response_msg(openc2_rsp, headers=openc2_msg.headers, encode=encode)
 
         if openc2_msg.body.openc2.request.args and openc2_msg.body.openc2.request.args.response_requested:
@@ -130,11 +130,11 @@ class Consumer:
     def create_response_msg(self, response_body: OpenC2RspFields, encode: str,
                             headers: OpenC2Headers = None) -> Union[str, bytes]:
         """
-        Creates and serializes an OpenC2 response.
+        Creates and serializes an OpenC2 Response.
 
-        :param response_body: Information to populate OpenC2 response fields.
-        :param headers: Information to populate OpenC2 response headers.
-        :param encode: String specifying the serialization format for the response.
+        :param response_body: Information to populate OpenC2 Response fields.
+        :param headers: Information to populate OpenC2 Response headers.
+        :param encode: String specifying the serialization format for the Response.
 
         :return: Serialized OpenC2 Response
         """
@@ -150,11 +150,11 @@ class Consumer:
         return self.serializations[encode].serialize(response)
 
     def _get_actuator_callable(self, oc2_msg: OpenC2Msg) -> Callable[[], OpenC2RspFields]:
-        """Identifies the appropriate function to perform the received OpenC2 command.
+        """Identifies the appropriate function to perform the received OpenC2 Command.
 
-        :param oc2_msg: The OpenC2 message received by the consumer.
+        :param oc2_msg: The OpenC2 Message received by the Consumer.
 
-        :return: The function with the received OpenC2 command supplied as an argument.
+        :return: The function with the received OpenC2 Command supplied as an argument.
         """
 
         oc2_cmd = oc2_msg.body.openc2.request
@@ -163,23 +163,22 @@ class Consumer:
             function = self.query_features
         elif oc2_cmd.action in self.dispatch and oc2_cmd.target_name in self.dispatch[oc2_cmd.action]:
             if oc2_cmd.actuator_name is None:
-                # Behavior of duplicate action-target pair functions (and their response(s))
-                # is undefined in the OpenC2 language, so we don't try to solve that here,
-                # and instead just call the first matching function
+                # Behavior of duplicate Action-Target pairs is currently undefined in the OpenC2 language.
+                # For the time being, this is handled by calling the function of the first matching pair.
                 function = next(iter(self.dispatch[oc2_cmd.action][oc2_cmd.target_name].values()))
             else:
                 if oc2_cmd.actuator_name in self.dispatch[oc2_cmd.action][oc2_cmd.target_name]:
                     function = self.dispatch[oc2_cmd.action][oc2_cmd.target_name][oc2_cmd.actuator_name]
                 else:
-                    raise TypeError(f'No actuator: {oc2_cmd.actuator_name}')
+                    raise TypeError(f'No Actuator: {oc2_cmd.actuator_name}')
         else:
-            raise TypeError(f'No action-target pair for {oc2_cmd.action} {oc2_cmd.target_name}')
+            raise TypeError(f'No Action-Target pair for {oc2_cmd.action} {oc2_cmd.target_name}')
 
         logging.debug(f'Will call a function named: {function.__name__}')
         return partial(function, oc2_cmd)
 
     def query_features(self, oc2_cmd: OpenC2CmdFields) -> OpenC2RspFields:
-        """Implementation of the 'query features' command as described in the OpenC2 Language Specification
+        """Implementation of the 'query features' Command as described in the OpenC2 Language Specification
         https://docs.oasis-open.org/openc2/oc2ls/v1.0/oc2ls-v1.0.html#41-implementation-of-query-features-command
         """
 
@@ -209,10 +208,10 @@ class Consumer:
             return OpenC2RspFields(status=StatusCode.OK)
 
     def add_actuator_profile(self, actuator: Actuator) -> None:
-        """Adds the actuator's functions to the consumer and adds the actuator's namespace identifier (nsid) to the
+        """Adds the Actuator's functions to the Consumer and adds the Actuator's namespace identifier (nsid) to the
         list of supported profiles
 
-        :param actuator: The actuator whose functions will be added to the consumer.
+        :param actuator: The Actuator whose functions will be added to the Consumer.
         """
         if actuator.nsid in self.profiles:
             raise ValueError('Actuator with the same nsid already exists')
@@ -225,6 +224,6 @@ class Consumer:
         """Adds the serialization to the Consumer, enabling it to serialize and deserialize messages using the
         serialization's methods.
 
-        :param serialization: The serialization to be added to the consumer.
+        :param serialization: The serialization to be added to the Consumer.
         """
         self.serializations[serialization.name] = serialization
