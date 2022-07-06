@@ -7,7 +7,6 @@ from time import time
 from pprint import pformat
 from concurrent.futures import ThreadPoolExecutor
 from functools import partial
-from collections import defaultdict
 from typing import Any, Callable, Dict, List, Union
 
 from pydantic import ValidationError

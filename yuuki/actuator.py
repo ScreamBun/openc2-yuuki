@@ -1,7 +1,6 @@
 """OpenC2 Actuator
 https://docs.oasis-open.org/openc2/oc2ls/v1.0/oc2ls-v1.0.html
 """
-from collections import defaultdict
 from typing import Callable, Dict, List, NoReturn
 from .openc2_types import OpenC2CmdFields, OpenC2RspFields
 

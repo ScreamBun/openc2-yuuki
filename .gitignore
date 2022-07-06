@@ -161,3 +161,6 @@ fabric.properties
 # Custom Ignore
 .idea/
 .DS_Store
+
+# App Specific
+osquery_conf.ini
