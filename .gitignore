@@ -26,6 +26,7 @@ wheels/
 .installed.cfg
 *.egg
 MANIFEST
+examples/actuators/osquery_conf.ini
 
 # PyInstaller
 #  Usually these files are written by a python script from a template
@@ -161,6 +162,3 @@ fabric.properties
 # Custom Ignore
 .idea/
 .DS_Store
-
-# App Specific
-osquery_conf.ini
