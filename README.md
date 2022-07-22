@@ -8,7 +8,7 @@
               \/                       \/   
 ```        
 
-# Table of Contents  
+# Table of Contents     
 
 [Introduction](#introduction)  
 [Requirements and Setup](#requirements-and-setup)  
