@@ -20,8 +20,14 @@ OS = "Mac"
 
 @er.pair('allow', 'domain_name', implemented=False)
 def allow_domain_name(oc2_cmd: OpenC2CmdFields) -> OpenC2RspFields:
-    status_text = f'Command Not Implemented'
-    return OpenC2RspFields(status=StatusCode.NOT_IMPLEMENTED, status_text=status_text)
+    device = oc2_cmd.target.get("domain_name", None)
+    if device is None:
+        status_text = f'No Domain Name Specified'
+        return OpenC2RspFields(status=StatusCode.BAD_REQUEST, status_text=status_text)
+    else:
+        r = "Domain Name Allowed"
+
+    return OpenC2RspFields(status=StatusCode.OK, results=r)
 
 
 @er.pair('allow', 'device', implemented=True)
@@ -31,6 +37,9 @@ def allow_device(oc2_cmd: OpenC2CmdFields) -> OpenC2RspFields:
         status_text = f'No Device Specified'
         return OpenC2RspFields(status=StatusCode.BAD_REQUEST, status_text=status_text)
     else:
+
+        # checking device list and not finding specified device will produce 500 "Cannot access device"
+
         r = "Device Allowed"
 
     if c := device.pop("hostname", None):
@@ -50,9 +59,12 @@ def allow_device(oc2_cmd: OpenC2CmdFields) -> OpenC2RspFields:
 def allow_file(oc2_cmd: OpenC2CmdFields) -> OpenC2RspFields:
     file = oc2_cmd.target.get("file", None)
     if file is None:
-        status_text = f'No Device Specified'
+        status_text = f'Cannot Access File'
         return OpenC2RspFields(status=StatusCode.BAD_REQUEST, status_text=status_text)
     else:
+
+        # if file cannot be accessed, status code 500 "Cannot access file"
+
         r = "File Allowed"
 
     if c := file.pop("name", None):
@@ -70,7 +82,7 @@ def allow_file(oc2_cmd: OpenC2CmdFields) -> OpenC2RspFields:
 
 @er.pair('allow', 'ipv4_net', implemented=False)
 def allow_ipv4_net(oc2_cmd: OpenC2CmdFields) -> OpenC2RspFields:
-    status_text = f'Command Not Implemented'
+    status_text = f'Target type not supported'
     return OpenC2RspFields(status=StatusCode.NOT_IMPLEMENTED, status_text=status_text)
 
 
@@ -96,17 +108,18 @@ def allow_ipv6_net(oc2_cmd: OpenC2CmdFields) -> OpenC2RspFields:
 
 @er.pair('deny', 'domain_name', implemented=False)
 def deny_domain_name(oc2_cmd: OpenC2CmdFields) -> OpenC2RspFields:
-    status_text = f'Command Not Implemented'
-    return OpenC2RspFields(status=StatusCode.NOT_IMPLEMENTED, status_text=status_text)
+    status_text = f'Target type not supported'
+    return OpenC2RspFields(status=501, status_text=status_text)
 
 
 @er.pair('deny', 'file', implemented=True)
 def file(oc2_cmd: OpenC2CmdFields) -> OpenC2RspFields:
     file = oc2_cmd.target.get("file", None)
     if file is None:
-        status_text = f'No File Specified'
+        status_text = f'Cannot access file'  #'No File Specified'
         return OpenC2RspFields(status=StatusCode.BAD_REQUEST, status_text=status_text)
     else:
+        # Logic for accessing and denying file
         r = "File Denied"
 
     if c := file.pop("name", None):
@@ -124,7 +137,7 @@ def file(oc2_cmd: OpenC2CmdFields) -> OpenC2RspFields:
 
 @er.pair('deny', 'ipv4_net', implemented=False)
 def deny_ipv4_net(oc2_cmd: OpenC2CmdFields) -> OpenC2RspFields:
-    status_text = f'Command Not Implemented'
+    status_text = f'Target type not supported'
     return OpenC2RspFields(status=StatusCode.NOT_IMPLEMENTED, status_text=status_text)
 
 
@@ -153,18 +166,62 @@ def deny_ipv6_net(oc2_cmd: OpenC2CmdFields) -> OpenC2RspFields:
 
 @er.pair('contain', 'device', implemented=False)
 def contain_device(oc2_cmd: OpenC2CmdFields) -> OpenC2RspFields:
+    device = oc2_cmd.target.get("device", None)
+    if device is None:
+        status_text = f'Cannot access device'  #'No Device Specified'
+        return OpenC2RspFields(status=StatusCode.BAD_REQUEST, status_text=status_text)
 
-    #args include device_containment, permitted_addresses
+    containment = oc2_cmd.args.get("device_containment", None)
+    if containment is None:
+        status_text = f'Containment type argument not specified'
+        return OpenC2RspFields(status=StatusCode.BAD_REQUEST, status_text=status_text)
 
-    status_text = f'Command Not Implemented'
-    return OpenC2RspFields(status=StatusCode.NOT_IMPLEMENTED, status_text=status_text)
+    allowed_keys = ['device_containment', 'permitted_addresses', 'duration', 'start_time', 'stop_time', 'response_requested', 'comment']
+    found_keys = []
+    found_other = []
+
+    for x in oc2_cmd.args():
+        if x in allowed_keys:
+            found_keys.append(x)
+        else:
+            found_other.append(x)
+
+    if len(found_keys) < 1 or len(found_other) > 0:
+        return OpenC2RspFields(status=StatusCode.BAD_REQUEST,
+                                   status_text=f'Any of {str(allowed_keys)} args expected, got {str(found_other)}')
+
+    else:
+        # Execute a real function here to deny...
+
+        r = "Cannot Access Device"
+        fields = ""
+
+    if c := device.pop("hostname", None):
+        # put it somewhere we can use it
+        fields += "hostname: " + c + " "
+        # Execute containment on this attribute
+
+    if c := device.pop("idn_hostnane", None):
+        # put it somewhere we can use it
+        fields += "idn_hostname: " + c + " "
+        # Execute containment on this attribute
+
+    if c := device.pop("device_id", None):
+        # put it somewhere we can use it
+        fields += "device_id: " + c + " "
+        # Execute containment on this attribute
+
+    if fields.__len__() > 2:
+        r = "Device Contained: "+fields
+
+    return OpenC2RspFields(status=StatusCode.OK, results=r)
 
 
 @er.pair('contain', 'file', implemented=False)
 def contain_file(oc2_cmd: OpenC2CmdFields) -> OpenC2RspFields:
     file = oc2_cmd.target.get("file", None)
     if file is None:
-        status_text = f'No Device Specified'
+        status_text = f'No File Specified'
         return OpenC2RspFields(status=StatusCode.BAD_REQUEST, status_text=status_text)
     else:
         r = "File Denied"
@@ -184,7 +241,7 @@ def contain_file(oc2_cmd: OpenC2CmdFields) -> OpenC2RspFields:
 
 @er.pair('create', 'registry_entry', implemented=False)
 def create_registry_entry(oc2_cmd: OpenC2CmdFields) -> OpenC2RspFields:
-    #Not a Windows Device
+    # Not a Windows Device
     status_text = f'Command Not Implemented'
     return OpenC2RspFields(status=StatusCode.NOT_IMPLEMENTED, status_text=status_text)
 
@@ -199,7 +256,7 @@ def delete_file(oc2_cmd: OpenC2CmdFields) -> OpenC2RspFields:
 
 @er.pair('delete', 'registry_entry', implemented=False)
 def delete_registry_entry(oc2_cmd: OpenC2CmdFields) -> OpenC2RspFields:
-    #Not a Windows Device
+    # Not a Windows Device
     status_text = f'Command Not Implemented'
     return OpenC2RspFields(status=StatusCode.NOT_IMPLEMENTED, status_text=status_text)
     
@@ -207,7 +264,7 @@ def delete_registry_entry(oc2_cmd: OpenC2CmdFields) -> OpenC2RspFields:
 @er.pair('delete', 'service', implemented=True)
 def delete_service(oc2_cmd: OpenC2CmdFields) -> OpenC2RspFields:
 
-    #Mock command execution currently
+    # Mock command execution currently
     status_text = f'Service deleted'
     return OpenC2RspFields(status=StatusCode.OK, status_text=status_text)
 
@@ -215,14 +272,31 @@ def delete_service(oc2_cmd: OpenC2CmdFields) -> OpenC2RspFields:
 @er.pair('start', 'file', implemented=True)
 def start_file(oc2_cmd: OpenC2CmdFields) -> OpenC2RspFields:
 
-    filename = oc2_cmd.target.get("filename")
+    filename = oc2_cmd.target.get("filename", None)
+
+    if filename is None:
+        status_text = f'Cannot access file'
+        return OpenC2RspFields(status=StatusCode.BAD_REQUEST, status_text=status_text)
+    elif file_path := os.path.join(Path(__file__).resolve().parent, "files/"+filename):
+
+                    if os.path.exists(file_path):
+                        with open(file_path, "r") as f:
+                            f.close()
+                    else:
+                        return OpenC2RspFields(status=StatusCode.NOT_FOUND, status_text="Cannot access file")   # "error performing er retrieval"
+
+    # check for downstream device arg, if missing 500 "Downstream device argument not populated"
+    downstream = oc2_cmd.args.get("downstream_device", None)
+    if downstream is None:
+        status_text = f'Downstream device argument not populated'
+        return OpenC2RspFields(status=StatusCode.BAD_REQUEST, status_text=status_text)
 
     if OS == "Mac":
         subprocess.call(['open', '-W', '-a', 'Terminal.app', 'python', '--args', filename])
-        result = "Process "+filename+" was run: " #append subprocess results or code
+        result = "Process "+filename+" was run: " # append subprocess results or code
     elif OS == "Windows":
         # different process for Windows
-        return OpenC2RspFields(status=StatusCode.NOT_FOUND, status_text="Not a Windows Machine")
+        return OpenC2RspFields(status=501, status_text="Command not supported")
 
     # Mock command execution currently
     status_text = f'Command Successful'
@@ -237,13 +311,39 @@ def stop_device(oc2_cmd: OpenC2CmdFields) -> OpenC2RspFields:
 
 @er.pair('stop', 'process', implemented=False)
 def stop_process(oc2_cmd: OpenC2CmdFields) -> OpenC2RspFields:
+
+    # out of order checks, but shows those checks properly while remaining unimplemented
+
+    downstream = oc2_cmd.args.get("downstream_device", None)
+    if downstream is None:
+        status_text = f'Downstream device argument not populated'
+        return OpenC2RspFields(status=StatusCode.BAD_REQUEST, status_text=status_text)
+
+    target_specifiers = oc2_cmd.get("Target", None)
+    if target_specifiers is None:
+        status_text = f'Process Target does not have any properties populated'
+        return OpenC2RspFields(status=400, status_text=status_text)
+
     status_text = f'Command Not Implemented'
     return OpenC2RspFields(status=StatusCode.NOT_IMPLEMENTED, status_text=status_text)
         
 
 @er.pair('stop', 'service', implemented=False)
 def stop_service(oc2_cmd: OpenC2CmdFields) -> OpenC2RspFields:
-    status_text = f'Command Not Implemented'
+
+    # out of order checks, but shows those checks properly while remaining unimplemented
+
+    downstream = oc2_cmd.args.get("downstream_device", None)
+    if downstream is None:
+        status_text = f'Downstream device argument not populated'
+        return OpenC2RspFields(status=StatusCode.BAD_REQUEST, status_text=status_text)
+
+    target_specifiers = oc2_cmd.get("Target", None)
+    if target_specifiers is None:
+        status_text = f'Service Target does not have any properties populated'
+        return OpenC2RspFields(status=400, status_text=status_text)
+
+    status_text = f'Command Not Supported'
     return OpenC2RspFields(status=StatusCode.NOT_IMPLEMENTED, status_text=status_text)
     
     
@@ -266,24 +366,26 @@ def scan_device(oc2_cmd: OpenC2CmdFields) -> OpenC2RspFields:
 
     #args must support and may include scan_depth, periodic_scan
 
-    allowed_keys = ['shallow', 'deep', 'enabled', 'disabled']
-    found_keys = []
+    depth_keys = ['shallow', 'deep']
+    periodic_keys = ['enabled', 'disabled']
+    found_depth_keys = []
+    found_periodic_keys = []
     found_other = []
-    if isinstance(oc2_cmd.target['scan_depth'], dict):
-        for key in oc2_cmd.target['scan_depth'].keys():
-            if key in allowed_keys:
-                found_keys.append(key)
+    if isinstance(oc2_cmd.args['scan_depth'], dict):
+        for key in oc2_cmd.args['scan_depth'].keys():
+            if key in depth_keys:
+                found_depth_keys.append(key)
             else:
                 found_other.append(key)
 
     if isinstance(oc2_cmd.target['periodic_scan'], dict):
         for key in oc2_cmd.target['periodic_scan'].keys():
-            if key in allowed_keys:
-                found_keys.append(key)
+            if key in periodic_keys:
+                found_periodic_keys.append(key)
             else:
                 found_other.append(key)
 
-    if len(found_keys) < 1 or len(found_other) > 0:
+    if len(found_depth_keys)+len(found_periodic_keys) < 1 or len(found_other) > 0:
         return OpenC2RspFields(status=StatusCode.BAD_REQUEST,
                                status_text=f'Unsuitable Scan Arguments: {str(found_other)}')
 
@@ -334,6 +436,12 @@ def set_registry_entry(oc2_cmd: OpenC2CmdFields) -> OpenC2RspFields:
 def set_account(oc2_cmd: OpenC2CmdFields) -> OpenC2RspFields:
     account_fields = oc2_cmd.target.get("account", {})
     print(account_fields)
+
+    downstream = oc2_cmd.args.get("downstream_device", None)
+    if downstream is None:
+        status_text = f'Downstream device argument not populated'
+        return OpenC2RspFields(status=StatusCode.BAD_REQUEST, status_text=status_text)
+
     if status:= getattr(oc2_cmd.args, "account_status", None):
         status = str.lower(status)
         print(status)
@@ -348,7 +456,7 @@ def set_account(oc2_cmd: OpenC2CmdFields) -> OpenC2RspFields:
                         with open(er_file, "w") as f:
                             f.write(status)
                             f.close()
-                            g = {"status" : str(status)}
+                            g = {"status": str(status)}
                         return OpenC2RspFields(status=StatusCode.OK, results=g)
                     else:
                         return OpenC2RspFields(status=StatusCode.NOT_FOUND, status_text="error performing er retrieval")
