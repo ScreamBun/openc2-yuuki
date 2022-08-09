@@ -4,7 +4,7 @@ https://docs.oasis-open.org/openc2/oc2ls/v1.0/oc2ls-v1.0.html#54-conformance-cla
 import json
 import logging
 from time import time
-from pprint import pformat  #properly prints JSON serielized text as part of return messages, useful for SBOM etc
+from pprint import pformat  # properly prints JSON serielized text as part of return messages, useful for SBOM etc
 from concurrent.futures import ThreadPoolExecutor
 from functools import partial
 from typing import Any, Callable, Dict, List, Union

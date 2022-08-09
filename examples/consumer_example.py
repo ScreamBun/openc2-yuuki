@@ -2,7 +2,7 @@
 OpenC2 Consumer Example
 """
 
-from oc2_arch import Consumer
+from yuuki import Consumer
 from actuators.slpf import slpf
 
 

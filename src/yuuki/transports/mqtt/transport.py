@@ -3,15 +3,14 @@ MQTT Consumer
 https://docs.oasis-open.org/openc2/transf-mqtt/v1.0/transf-mqtt-v1.0.html
 """
 import logging
-import re
 import paho.mqtt.client as mqtt
 
 from typing import Any
 from paho.mqtt.packettypes import PacketTypes
 from paho.mqtt.properties import Properties
-from oc2_arch.consumer import Consumer
-from oc2_arch.openc2_types import StatusCode, OpenC2RspFields
 from .config import MqttConfig
+from ...consumer import Consumer
+from ...openc2_types import StatusCode, OpenC2RspFields
 
 
 class MqttTransport:

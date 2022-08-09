@@ -7,7 +7,7 @@ import subprocess
 import os
 import time
 from pathlib import Path
-from oc2_arch import Actuator, OpenC2CmdFields, OpenC2RspFields, StatusCode
+from yuuki import Actuator, OpenC2CmdFields, OpenC2RspFields, StatusCode
 
 er = Actuator(nsid='er')
 seconds = time.time()

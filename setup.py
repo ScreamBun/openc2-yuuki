@@ -10,8 +10,5 @@ def get_requirements():
 
 setup(
     name='Yuuki',
-    package_data={
-        'Yuuki': ['./oc2_arch/*'],
-    },
     install_requires=get_requirements()
 )

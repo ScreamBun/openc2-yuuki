@@ -3,14 +3,8 @@ Example Implementation of an OpenC2 MQTT Consumer
 """
 import argparse
 
-from oc2_arch.transports import (
-    MqttTransport,
-    MqttConfig,
-    MQTTAuthorization,
-    MQTTAuthentication,
-    BrokerConfig,
-    Publication,
-    Subscription
+from yuuki.transports import (
+    MqttTransport, MqttConfig, MQTTAuthorization, MQTTAuthentication, BrokerConfig, Publication, Subscription
 )
 
 from consumer_example import consumer

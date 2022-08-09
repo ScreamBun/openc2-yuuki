@@ -11,9 +11,9 @@ from dxlclient.callbacks import EventCallback, RequestCallback
 from dxlclient.message import Event, Request, Response
 from dxlclient.service import ServiceRegistrationInfo
 
-from oc2_arch.consumer import Consumer
-from oc2_arch.openc2_types import StatusCode, OpenC2RspFields
 from .config import OpenDxlConfig
+from ...consumer import Consumer
+from ...openc2_types import StatusCode, OpenC2RspFields
 
 
 run = threading.Event()

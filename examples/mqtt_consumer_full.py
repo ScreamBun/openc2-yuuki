@@ -1,11 +1,11 @@
 """
 Example Implementation of an OpenC2 MQTT Consumer
 """
-from oc2_arch.transports import (
+from yuuki.transports import (
     MqttTransport, MqttConfig, MQTTAuthorization, MQTTAuthentication, BrokerConfig, Publication, Subscription
 )
 
-from oc2_arch import Consumer
+from yuuki import Consumer
 # import actuator profiles for your consumer
 
 
