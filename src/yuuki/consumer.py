@@ -53,7 +53,7 @@ class Consumer:
                 self.add_serialization(serialization)
         if actuators is not None:
             for actuator in actuators:
-                self.add_actuator_profile(actuator)
+                self.add_actuator(actuator)
                 print("Added actuator "+actuator.nsid)
         self.executor = ThreadPoolExecutor()
         print(r'''
@@ -181,21 +181,21 @@ class Consumer:
         :return: The function with the received OpenC2 Command supplied as an argument.
         """
         oc2_cmd = oc2_msg.body.openc2.request
-        print(f"{oc2_cmd.action} {oc2_cmd.target_name} {oc2_cmd.actuator_name}")
+        print(f"{oc2_cmd.action} {oc2_cmd.target_name} {oc2_cmd.profile_name}")
         print(self.dispatch)
         print(self.understood)
         if oc2_cmd.action == 'query' and oc2_cmd.target_name == 'features':
             function = self.query_features
         elif oc2_cmd.action in self.dispatch and oc2_cmd.target_name in self.dispatch[oc2_cmd.action]:
-            if oc2_cmd.actuator_name is None:
+            if oc2_cmd.profile_name is None:
                 # Behavior of duplicate Action-Target pairs is currently undefined in the OpenC2 language.
                 # For the time being, this is handled by calling the function of the first matching pair.
                 function = next(iter(self.dispatch[oc2_cmd.action][oc2_cmd.target_name].values()))
             else:
-                if oc2_cmd.actuator_name in self.dispatch[oc2_cmd.action][oc2_cmd.target_name]:
-                    function = self.dispatch[oc2_cmd.action][oc2_cmd.target_name][oc2_cmd.actuator_name]
+                if oc2_cmd.profile_name in self.dispatch[oc2_cmd.action][oc2_cmd.target_name]:
+                    function = self.dispatch[oc2_cmd.action][oc2_cmd.target_name][oc2_cmd.profile_name]
                 else:
-                    raise TypeError(f'No Actuator: {oc2_cmd.actuator_name}')
+                    raise TypeError(f'No Actuator: {oc2_cmd.profile_name}')
         elif oc2_cmd.action in self.understood and oc2_cmd.target_name in self.understood[oc2_cmd.action]:
             function = self.unimplemented_command_function
         else:
@@ -249,13 +249,13 @@ class Consumer:
 
     def unimplemented_command_function(self, oc2_cmd: OpenC2CmdFields) -> OpenC2RspFields:
         """
-        Handles instances of get_actuator_callable that find a command that is understood by an actuator
-        but not implemented. Returns OpenC2 RSP with a 501 error.
+        Handles instances of get_actuator_callable that find a command that is understood by an profile
+        but not implemented by the actuator. Returns OpenC2 RSP with a 501 error.
         """
         print("Command Not Implemented")
         return OpenC2RspFields(status=StatusCode.NOT_IMPLEMENTED, status_text='Command Not Supported')
 
-    def add_actuator_profile(self, actuator: Actuator) -> None:
+    def add_actuator(self, actuator: Actuator) -> None:
         """
         Adds the Actuator's functions to the Consumer and adds the Actuator's namespace identifier (nsid) to the
         list of supported profiles
