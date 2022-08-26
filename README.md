@@ -1,7 +1,12 @@
 
-# Yuuki  
+## OASIS TC Open Repository: openc2-yuuki
+
+This GitHub public repository ( [https://github.com/oasis-open/openc2-yuuki](https://github.com/oasis-open/openc2-yuuki) ) was created at the request of the [OASIS Open Command and Control (OpenC2) TC](https://www.oasis-open.org/committees/openc2/) as an [OASIS TC Open Repository](https://www.oasis-open.org/resources/open-repositories/) to support development of open source resources related to Technical Committee work.
+While this TC Open Repository remains associated with the sponsor TC, its development priorities, leadership, intellectual property terms, participation rules, and other matters of governance are [separate and distinct](https://github.com/oasis-open/openc2-yuuki/blob/master/CONTRIBUTING.md#governance-distinct-from-oasis-tc-process) from the OASIS TC Process and related policies.
+All contributions made to this TC Open Repository are subject to open source license terms expressed in the [BSD-3-Clause License](https://www.oasis-open.org/sites/www.oasis-open.org/files/BSD-3-Clause.txt).  That license was selected as the declared ["Applicable License"](https://www.oasis-open.org/resources/open-repositories/licenses) when the TC Open Repository was created.
+As documented in ["Public Participation Invited"](https://github.com/oasis-open/openc2-yuuki/blob/master/CONTRIBUTING.md#public-participation-invited), contributions to this OASIS TC Open Repository are invited from all parties, whether affiliated with OASIS or not.  Participants must have a GitHub account, but no fees or OASIS membership obligations are required. Participation is expected to be consistent with the [OASIS TC Open Repository Guidelines and Procedures](https://www.oasis-open.org/policies-guidelines/open-repositories), the open source [LICENSE](https://github.com/oasis-open/openc2-yuuki/blob/master/LICENSE) designated for this particular repository, and the requirement for an [Individual Contributor License Agreement](https://www.oasis-open.org/resources/open-repositories/cla/individual-cla) that governs intellectual property.
   
-![Yuuki](Y.png)  
+[<img src="snow_yuuki.jpg" alt="Yuuki" title="Yuuki Image" width="224" height="104"/>](snow_yuuki.jpg)
   
 ## Table of Contents  
   
@@ -80,7 +85,7 @@ Being focused on cyber defense, Yuuki Consumers have a rate limit that caps the 
 This helps protect against network overload, recursion errors, or other unforseen issues. 
 
 ```python
-from oc2_arch import Consumer
+from yuuki import Consumer
 
 consumer = Consumer(rate_limit=60, versions=['1.0'], actuators=[], serializations=[])
 ```
@@ -100,7 +105,7 @@ You will see it at the end of properly processed command logic, and also
 with many error messages to send the appropriate failure status code as an OpenC2 message.  
 
 ```python
-from oc2_arch import OpenC2RspFields
+from yuuki import OpenC2RspFields
 
 consumer.create_response_msg(response_body=OpenC2RspFields(), encode='json')
 ```
@@ -137,7 +142,7 @@ Pairs consist of an action and a target the actuator will read from the OpenC2 C
 
 
 ```python
-from oc2_arch import OpenC2CmdFields, OpenC2RspFields, StatusCode
+from yuuki import OpenC2CmdFields, OpenC2RspFields, StatusCode
 
 @example.pair('action', 'target')
 def example_command(oc2_cmd: OpenC2CmdFields) -> OpenC2RspFields:
@@ -163,7 +168,7 @@ a function for encoding messages, and a function for decoding messages.
 The Consumer class comes with support for JSON.
 ```python
 import json
-from oc2_arch import Serialization
+from yuuki import Serialization
 
 Serialization(name='json', deserialize=json.loads, serialize=json.dumps)
 ```
@@ -285,19 +290,42 @@ OpenC2 is a standardized language for the command and control of technologies th
 By providing a common language for machine-to-machine communication, OpenC2 is vendor and application agnostic, 
 enabling interoperability across a range of cyber security tools and applications.
 Learn more about OpenC2 at their website, [openc2.org](https://openc2.org/)
-
-#### Who is "In Charge" of Yuuki?
-[OASIS Open Projects](https://www.oasis-open.org/open-projects/) operate independently under lightweight rules, 
-are funded by sponsorship by organizations committed to the project's success, and are coordinated and managed by OASIS.
-
-#### Where can I find Actuators?
+  
+#### Where can I find Actuators?  
 Example Implementations of OASIS approved Actuator Profiles will be provided in the Examples folder. 
 Other functions may be in the works, or used for demo purposes, and these do not generally end up on OASIS Main 
 until they are fully vetted and polished. However, if you want to see what we're cooking up, feel free to [take a look](https://github.com/ScreamBun/openc2-yuuki/tree/develop)
-
+  
 #### Can I make my own Actuators for Yuuki?
-Yes! Yuuki is an Open Project, and while OASIS requires contributors to 
+Yes! Yuuki is an [OASIS Open Project](https://www.oasis-open.org/open-projects/), and while OASIS requires contributors to 
 read and agree to their Contributor Licensing Agreement, absolutely anyone can pull down
 and play around with the code. You can have Yuuki perform officially approved 
 OpenC2 Actuator Profile functions, or just mess around with things of your own design.
 Good Luck, and Have Fun!
+
+#### Who Maintains Yuuki?
+TC Open Repository [Maintainers](https://www.oasis-open.org/resources/open-repositories/maintainers-guide) are responsible for oversight of this project's community development activities, including evaluation of GitHub [pull requests]() and [preserving](https://www.oasis-open.org/policies-guidelines/open-repositories#repositoryManagement) open source principles of openness and fairness. Maintainers are recognized and trusted experts who serve to implement community goals and consensus design preferences.
+Initially, the associated TC members have designated one or more persons to serve as Maintainer(s); subsequently, participating community members may select additional or substitute Maintainers, per [consensus agreements](https://www.oasis-open.org/maintainers-guide/#additionalMaintainers).
+Current Maintainers of this TC Open Repository  
+  
+* [Dave Kemp](dpkemp@radium.ncsc.mil); GitHub ID: [https://github.com/davaya](https://github.com/davaya); WWW: [Department of Defense](www.nsa.gov)  
+* [Joshua Brulé](mailto:jctbrule@gmail.com); GitHub ID: [https://github.com/jtcbrule](https://github.com/jtcbrule); WWW: [University of Maryland](https://umd.edu/)
+* [David Lemire](mailto:david.lemire@hii-tsd.com); GitHub ID: [https://github.com/dlemire60](https://github.com/dlemire60); WWW: [National Security Agency](www.nsa.gov)
+* The ScreamingBunny Development team; GitHub ID: [https://github.com/ScreamBun](https://github.com/ScreamBun)
+
+#### Statement of Purpose
+Statement of Purpose for this OASIS TC Open Repository (openc2-yuuki) as [proposed](https://drive.google.com/open?id=0B-FunCZrr-vtcUJTWVBNaFNlVUE) and [approved](https://www.oasis-open.org/committees/ballot.php?id=3115) [[bis]](https://issues.oasis-open.org/browse/TCADMIN-2746) by the OpenC2 TC:  
+The purpose of the openc2-yuuki GitHub repository is to   
+    (a) demonstrate the implementation of OpenC2 via multiple dispatch on type, and    
+    (b) provision a codebase to enable other prototype efforts.    
+The initial codebase for the openc2-yuuki repository is imported from the OpenC2 Forum's Github repository.  
+
+#### About OASIS TC Open Repositories
+* [TC Open Repositories: Overview and Resources](https://www.oasis-open.org/resources/open-repositories/)
+* [Frequently Asked Questions](https://www.oasis-open.org/resources/open-repositories/faq)
+* [Open Source Licenses](https://www.oasis-open.org/resources/open-repositories/licenses)
+* [Contributor License Agreements (CLAs)](https://www.oasis-open.org/resources/open-repositories/cla)
+* [Maintainers' Guidelines and Agreement](https://www.oasis-open.org/resources/open-repositories/maintainers-guide)
+
+#### Submitting Feedback to this Repository
+Questions or comments about this TC Open Repository's activities should be composed as GitHub issues or comments. If use of an issue/comment is not possible or appropriate, questions may be directed by email to the Maintainer(s) [listed above](https://ccoe-gitlab.hii-tsd.com/screamingbunny/yuuki/-/blob/34630146e94b73b0604bdeea80b74339607e08e3/README.md#currentMaintainers).  Please send general questions about TC Open Repository participation to OASIS Staff at [repository-admin@oasis-open.org](mailto:repository-admin@oasis-open.org) and any specific CLA-related questions to [repository-cla@oasis-open.org](mailto:repository-cla@oasis-open.org).

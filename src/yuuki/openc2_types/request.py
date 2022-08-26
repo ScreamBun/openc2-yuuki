@@ -36,7 +36,7 @@ class OpenC2CmdArgs(BaseModel, extra=Extra.allow):
        #     if arg not in ('start_time', 'stop_time', 'duration', 'response_requested'):
        #         if type(value) is not dict:
         #            raise ValueError('Value of extra arguments must be a dictionary')
-        #return args
+        # return args
 
 
 class OpenC2CmdFields(BaseModel, extra=Extra.forbid):
@@ -46,10 +46,10 @@ class OpenC2CmdFields(BaseModel, extra=Extra.forbid):
     action: str
     target: Dict[str, Any]
     args: Optional[Union[OpenC2CmdArgs, Dict[str, Any]]]
-    actuator: Optional[Dict[str, Dict[str, Any]]]
+    profile: Optional[Dict[str, Dict[str, Any]]]
     command_id: Optional[str]
 
-    @validator('target', 'actuator')
+    @validator('target', 'profile')
     def validate_choice_length(cls, choice: Dict):
         if len(choice) != 1:
             raise ValueError('Choice fields must have a length of one')
@@ -60,11 +60,11 @@ class OpenC2CmdFields(BaseModel, extra=Extra.forbid):
         return next(iter(self.target))
 
     @property
-    def actuator_name(self):
-        if self.actuator is None:
+    def profile_name(self):
+        if self.profile is None:
             return None
         else:
-            return next(iter(self.actuator))
+            return next(iter(self.profile))
 
 
 class OpenC2Cmd(BaseModel, extra=Extra.forbid):
