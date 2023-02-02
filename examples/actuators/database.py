@@ -87,7 +87,7 @@ def query_database(oc2_cmd: OpenC2CmdFields) -> OpenC2RspFields:
     else:
         return OpenC2RspFields(status=StatusCode.NOT_IMPLEMENTED, status_text="error performing osquery function: target DB improperly specified.")
 
-# else: return OpenC2RspFields(status_text="error performing db function, unknown aguments")
+# else: return OpenC2RspFields(status_text="error performing db function, unknown arguments")
 
 
 """
